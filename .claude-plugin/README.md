@@ -88,11 +88,11 @@ Test the hooks manually:
 ```bash
 # Test session-start hook
 echo '{"session_id":"test-123","cwd":"/tmp","transcript_path":"/tmp/test.json"}' | \
-  .claude-plugin/hooks/session-start.sh
+  scripts/hooks/session-start.sh
 
 # Test session-end hook
 echo '{"session_id":"test-123","cwd":"/tmp","transcript_path":"/tmp/test.json"}' | \
-  .claude-plugin/hooks/session-end.sh
+  scripts/hooks/session-end.sh
 
 # Check output
 cat ~/.agent-tracker/sessions.jsonl | jq .
@@ -112,7 +112,7 @@ The Agent Tracker TUI monitors the JSONL file and displays active sessions in re
 
 2. Verify hook scripts are executable:
    ```bash
-   chmod +x .claude-plugin/hooks/*.sh
+   chmod +x scripts/hooks/*.sh
    ```
 
 3. Check for errors in debug log:

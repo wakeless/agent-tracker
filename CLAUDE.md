@@ -112,7 +112,7 @@ You should see `agent-tracker` listed with source as "Directory".
         "hooks": [
           {
             "type": "command",
-            "command": "/absolute/path/to/.claude-plugin/hooks/session-start.sh",
+            "command": "/absolute/path/to/scripts/hooks/session-start.sh",
             "timeout": 5
           }
         ]
@@ -123,7 +123,7 @@ You should see `agent-tracker` listed with source as "Directory".
         "hooks": [
           {
             "type": "command",
-            "command": "/absolute/path/to/.claude-plugin/hooks/session-end.sh",
+            "command": "/absolute/path/to/scripts/hooks/session-end.sh",
             "timeout": 5
           }
         ]
@@ -183,7 +183,7 @@ You should see both `session_start` and `session_end` events with proper session
 
 ## Common Issues
 
-1. **Hooks silently failing**: Check hook script permissions (`chmod +x .claude-plugin/hooks/*.sh`)
+1. **Hooks silently failing**: Check hook script permissions (`chmod +x scripts/hooks/*.sh`)
 2. **jq not found**: Install jq (`brew install jq` on macOS)
 3. **No events written**: Verify `~/.agent-tracker/` directory exists and is writable
 4. **Nested session issue**: Always test from a fresh terminal, not from within Claude
