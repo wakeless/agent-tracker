@@ -5,5 +5,5 @@
   "author": {
     "name": "Agent Tracker Team"
   },
-  "hooks": "./hooks/hooks.json"
+  "hooks": "./.claude-plugin/hooks/hooks.json"
 }
