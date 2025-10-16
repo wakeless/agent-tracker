@@ -1,8 +1,50 @@
-This is an typescript CLI TUI written utilising Ink.
+This is a TypeScript CLI TUI written using Ink (React for CLIs).
 
-As an LLM agent, you will not finish working until your TODO list or your acceptance criteria are completeAs.
+## Development Guidelines
 
-You will also work iteratively with a TDD loop. You should always create and utilise a feedback loop to ensure that what you are building is always workable.
+As an LLM agent working on this project:
+
+1. **Complete Work**: Do not finish until your TODO list or acceptance criteria are complete
+2. **TDD Loop**: Work iteratively with Test-Driven Development
+3. **Feedback Loop**: Always create and utilize feedback loops to ensure code is workable
+4. **Architecture**: Follow the patterns documented in [ARCHITECTURE.md](./ARCHITECTURE.md)
+   - Redux pattern for state management
+   - Provider pattern for terminal detection
+   - Event-driven architecture
+   - Type-safe discriminated unions
+
+## Technical Reference
+
+- **[ARCHITECTURE.md](./ARCHITECTURE.md)** - Full system architecture, design patterns, and extension points
+- **[README.md](./README.md)** - User-facing documentation and features
+- **[scripts/hooks/providers/README.md](./scripts/hooks/providers/README.md)** - Terminal provider system
+
+## React/Ink Guidelines
+
+### Key Props
+The "Each child in a list should have a unique key prop" warning is **only relevant** when:
+- Iterating over arrays with `.map()`
+- Rendering dynamic lists of components
+- Components that may reorder, add, or remove items
+
+**Do NOT add keys to:**
+- Static, non-iterating JSX elements
+- Single conditional renders (`condition && <Component />`)
+- Static sibling elements that don't change order
+
+**Example - Keys Required:**
+```tsx
+{items.map((item) => (
+  <DetailRow key={item.id} label={item.label} value={item.value} />
+))}
+```
+
+**Example - Keys NOT Required:**
+```tsx
+<DetailRow label="Session ID" value={session.id} />
+<DetailRow label="Working Directory" value={session.cwd} />
+{/* These are static, no iteration, no keys needed */}
+```
 
 # Debugging and Monitoring
 

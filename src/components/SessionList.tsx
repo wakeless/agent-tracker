@@ -60,6 +60,24 @@ function SessionListItem({ session, isSelected }: SessionListItemProps) {
   // Format time since last activity
   const timeSince = formatTimeSince(session.lastActivityTime);
 
+  // Get iTerm-specific information if available
+  const isITerm = session.terminal.term_program === 'iTerm.app';
+  const tabName = isITerm && session.terminal.iterm.tab_name !== 'unknown'
+    ? session.terminal.iterm.tab_name
+    : null;
+  const profile = isITerm && session.terminal.iterm.profile !== 'unknown'
+    ? session.terminal.iterm.profile
+    : null;
+
+  // Build display name with iTerm info
+  const displayName = tabName || dirName;
+
+  // Build secondary info line
+  const terminalInfo = isITerm ? 'iTerm2' : session.terminal.term_program || 'Terminal';
+  const secondaryInfo = profile
+    ? `${terminalInfo} (${profile}) • ${timeSince}`
+    : `${terminalInfo} • ${timeSince}`;
+
   return (
     <Box>
       <Box width={2}>
@@ -78,12 +96,15 @@ function SessionListItem({ session, isSelected }: SessionListItemProps) {
             color={isSelected ? 'cyan' : undefined}
             dimColor={session.status !== 'active'}
           >
-            {dirName}
+            {displayName}
           </Text>
+          {tabName && tabName !== dirName && (
+            <Text dimColor> ({dirName})</Text>
+          )}
         </Box>
         <Box marginLeft={2}>
           <Text dimColor>
-            {session.terminal.term_program || 'Terminal'} • {timeSince}
+            {secondaryInfo}
           </Text>
         </Box>
       </Box>

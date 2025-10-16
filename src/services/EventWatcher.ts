@@ -118,6 +118,8 @@ export class EventWatcher {
         this.handler.onSessionStart(event);
       } else if (event.event_type === 'session_end') {
         this.handler.onSessionEnd(event);
+      } else if (event.event_type === 'activity' && this.handler.onActivity) {
+        this.handler.onActivity(event);
       }
     } catch (error) {
       if (this.handler.onError) {

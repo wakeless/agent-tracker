@@ -4,6 +4,9 @@
 
 set -euo pipefail
 
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # Debug log to verify hook is being called
 echo "[$(date)] Hook called" >> "$HOME/.agent-tracker/debug.log" 2>&1 || true
 
@@ -15,7 +18,7 @@ SESSION_ID=$(echo "$HOOK_DATA" | jq -r '.session_id // "unknown"')
 CWD=$(echo "$HOOK_DATA" | jq -r '.cwd // "unknown"')
 TRANSCRIPT_PATH=$(echo "$HOOK_DATA" | jq -r '.transcript_path // "unknown"')
 
-# Capture terminal information
+# Capture basic terminal information
 if TTY_OUTPUT=$(tty 2>&1); then
   TTY="$TTY_OUTPUT"
 else
@@ -31,32 +34,21 @@ TERM_SESSION_ID="${TERM_SESSION_ID:-unknown}"
 LC_TERMINAL="${LC_TERMINAL:-unknown}"
 LC_TERMINAL_VERSION="${LC_TERMINAL_VERSION:-unknown}"
 
-# iTerm2-specific information
-ITERM_SESSION_ID="${ITERM_SESSION_ID:-unknown}"
-ITERM_PROFILE="${ITERM_PROFILE:-unknown}"
-
-# Try to get iTerm2 tab/window names using AppleScript (macOS only)
-ITERM_TAB_NAME="unknown"
-ITERM_WINDOW_NAME="unknown"
-if [[ "$TERM_PROGRAM" == "iTerm.app" ]] && command -v osascript >/dev/null 2>&1; then
-  # Get current tab name
-  ITERM_TAB_NAME=$(osascript -e 'tell application "iTerm2"
-    try
-      tell current session of current tab of current window
-        get name
-      end tell
-    end try
-  end tell' 2>/dev/null || echo "unknown")
-
-  # Get window name
-  ITERM_WINDOW_NAME=$(osascript -e 'tell application "iTerm2"
-    try
-      tell current window
-        get name
-      end tell
-    end try
-  end tell' 2>/dev/null || echo "unknown")
+# Use terminal provider to get terminal-specific information
+# Try iTerm2 provider first, fall back to generic
+TERMINAL_PROVIDER_JSON=""
+if [[ "$TERM_PROGRAM" == "iTerm.app" ]]; then
+  TERMINAL_PROVIDER_JSON=$("${SCRIPT_DIR}/providers/iterm2.sh" 2>/dev/null || \
+                           "${SCRIPT_DIR}/providers/generic.sh")
+else
+  TERMINAL_PROVIDER_JSON=$("${SCRIPT_DIR}/providers/generic.sh")
 fi
+
+# Extract provider data for use in final JSON
+ITERM_SESSION_ID=$(echo "$TERMINAL_PROVIDER_JSON" | jq -r '.session_id // "unknown"')
+ITERM_PROFILE=$(echo "$TERMINAL_PROVIDER_JSON" | jq -r '.profile // "unknown"')
+ITERM_TAB_NAME=$(echo "$TERMINAL_PROVIDER_JSON" | jq -r '.tab_name // "unknown"')
+ITERM_WINDOW_NAME=$(echo "$TERMINAL_PROVIDER_JSON" | jq -r '.window_name // "unknown"')
 
 # Docker detection
 DOCKER_CONTAINER="false"

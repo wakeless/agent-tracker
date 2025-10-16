@@ -1,12 +1,14 @@
 import React from 'react';
 import { Box, Text } from 'ink';
 import { Session } from '../types/session.js';
+import { ParsedTranscriptEntry } from '../types/transcript.js';
 
 interface SessionDetailProps {
   session: Session | null;
+  recentTranscript?: ParsedTranscriptEntry[];
 }
 
-export function SessionDetail({ session }: SessionDetailProps) {
+export function SessionDetail({ session, recentTranscript = [] }: SessionDetailProps) {
   if (!session) {
     return (
       <Box flexDirection="column" padding={1}>
@@ -36,6 +38,25 @@ export function SessionDetail({ session }: SessionDetailProps) {
       </Box>
 
       <DetailRow label="Program" value={session.terminal.term_program} />
+
+      {/* iTerm2-specific information */}
+      {session.terminal.term_program === 'iTerm.app' && (
+        <React.Fragment>
+          {session.terminal.iterm.tab_name !== 'unknown' && (
+            <DetailRow label="iTerm Tab" value={session.terminal.iterm.tab_name} />
+          )}
+          {session.terminal.iterm.window_name !== 'unknown' && (
+            <DetailRow label="iTerm Window" value={session.terminal.iterm.window_name} />
+          )}
+          {session.terminal.iterm.profile !== 'unknown' && (
+            <DetailRow label="iTerm Profile" value={session.terminal.iterm.profile} />
+          )}
+          {session.terminal.iterm.session_id !== 'unknown' && (
+            <DetailRow label="iTerm Session ID" value={session.terminal.iterm.session_id} />
+          )}
+        </React.Fragment>
+      )}
+
       <DetailRow label="TTY" value={session.terminal.tty} />
       <DetailRow label="Shell" value={session.terminal.shell} />
       <DetailRow label="TERM" value={session.terminal.term} />
@@ -50,9 +71,44 @@ export function SessionDetail({ session }: SessionDetailProps) {
         <DetailRow label="Ended" value={formatDateTime(session.endTime)} />
       )}
 
+      {/* Recent Conversation Section */}
+      {recentTranscript.length > 0 && (
+        <React.Fragment>
+          <Box marginTop={1} marginBottom={1}>
+            <Text bold underline>Recent Conversation</Text>
+          </Box>
+          {recentTranscript.slice(-5).map((entry, index) => {
+            const maxLength = 60;
+            const truncatedContent = entry.content.length > maxLength
+              ? entry.content.substring(0, maxLength) + '...'
+              : entry.content;
+
+            const typeColor = entry.type === 'user' ? 'cyan' : entry.type === 'tool_use' ? 'yellow' : 'green';
+            const typeLabel = entry.type === 'user' ? 'User' : entry.type === 'tool_use' ? entry.toolName || 'Tool' : 'Assistant';
+
+            return (
+              <Box key={entry.uuid} flexDirection="column" marginBottom={index === 4 ? 0 : 1}>
+                <Box>
+                  <Text dimColor>{formatActivityTime(entry.timestamp)}</Text>
+                  <Text> </Text>
+                  <Text bold color={typeColor}>[{typeLabel}]</Text>
+                </Box>
+                <Box marginLeft={2}>
+                  <Text>{truncatedContent}</Text>
+                </Box>
+              </Box>
+            );
+          })}
+        </React.Fragment>
+      )}
+
       <Box marginTop={1}>
         <Text bold>Transcript: </Text>
         <Text dimColor>{session.transcriptPath}</Text>
+      </Box>
+
+      <Box marginTop={1}>
+        <Text dimColor>Press ENTER to view full transcript</Text>
       </Box>
     </Box>
   );
@@ -129,4 +185,17 @@ function formatDateTime(date: Date): string {
     hour: '2-digit',
     minute: '2-digit',
   });
+}
+
+function formatActivityTime(date: Date): string {
+  const now = new Date();
+  const diffSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+  if (diffSeconds < 60) return `${diffSeconds}s ago`;
+
+  const diffMinutes = Math.floor(diffSeconds / 60);
+  if (diffMinutes < 60) return `${diffMinutes}m ago`;
+
+  const diffHours = Math.floor(diffMinutes / 60);
+  return `${diffHours}h ago`;
 }

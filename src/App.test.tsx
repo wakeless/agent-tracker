@@ -4,17 +4,25 @@ import { describe, it, expect } from 'vitest';
 import { App } from './App.js';
 
 describe('App', () => {
-  it('should render welcome message', () => {
+  it('should render app title', () => {
     const { lastFrame } = render(<App />);
 
     expect(lastFrame()).toContain('Agent Tracker');
-    expect(lastFrame()).toContain('Hello');
-    expect(lastFrame()).toContain('World');
   });
 
-  it('should render custom name', () => {
-    const { lastFrame } = render(<App name="Alice" />);
+  it('should render session stats bar', () => {
+    const { lastFrame } = render(<App />);
 
-    expect(lastFrame()).toContain('Alice');
+    expect(lastFrame()).toContain('Total:');
+    expect(lastFrame()).toContain('Active:');
+    expect(lastFrame()).toContain('Inactive:');
+    expect(lastFrame()).toContain('Ended:');
+  });
+
+  it('should render empty state when no sessions', () => {
+    const { lastFrame } = render(<App />);
+
+    expect(lastFrame()).toContain('No active sessions');
+    expect(lastFrame()).toContain('Start a Claude session to see it here');
   });
 });
