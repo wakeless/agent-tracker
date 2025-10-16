@@ -97,22 +97,32 @@ claude plugin marketplace list
 
 You should see `agent-tracker` listed with source as "Directory".
 
-### 3. Configure Hooks in Settings
+### 3. Enable the Plugin
 
-**Important**: Plugin hooks defined in `.claude-plugin/hooks/hooks.json` may not load automatically. The reliable solution is to explicitly configure hooks in `.claude/settings.local.json`:
+Enable the plugin in `~/.claude/settings.json`:
 
 ```json
 {
   "enabledPlugins": {
     "agent-tracker@agent-tracker": true
-  },
+  }
+}
+```
+
+### 4. Plugin Hooks Configuration Structure
+
+The `.claude-plugin/hooks/hooks.json` file must have this **exact structure**:
+
+```json
+{
   "hooks": {
     "SessionStart": [
       {
+        "matcher": "",
         "hooks": [
           {
             "type": "command",
-            "command": "/absolute/path/to/scripts/hooks/session-start.sh",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/hooks/session-start.sh",
             "timeout": 5
           }
         ]
@@ -120,10 +130,11 @@ You should see `agent-tracker` listed with source as "Directory".
     ],
     "SessionEnd": [
       {
+        "matcher": "",
         "hooks": [
           {
             "type": "command",
-            "command": "/absolute/path/to/scripts/hooks/session-end.sh",
+            "command": "${CLAUDE_PLUGIN_ROOT}/scripts/hooks/session-end.sh",
             "timeout": 5
           }
         ]
@@ -133,9 +144,48 @@ You should see `agent-tracker` listed with source as "Directory".
 }
 ```
 
-Use **absolute paths** to the hook scripts, not relative paths.
+**Critical requirements**:
+- Top-level `"hooks"` wrapper object
+- `"matcher"` field for each event (empty string matches all)
+- `${CLAUDE_PLUGIN_ROOT}` variable points to repository root
+- Paths are relative to `${CLAUDE_PLUGIN_ROOT}`
 
-### 4. Test Hooks Properly
+The plugin.json must reference the hooks file with a path relative to the repository root:
+
+```json
+{
+  "hooks": "./.claude-plugin/hooks/hooks.json"
+}
+```
+
+### 5. Known Limitation: SessionEnd Hooks
+
+**Issue**: SessionEnd hooks defined in plugin manifests (`.claude-plugin/hooks/hooks.json`) may not fire reliably, even though SessionStart hooks work.
+
+**Workaround**: Add SessionEnd hooks directly to `~/.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "SessionEnd": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/michaelgall/Development/agent-tracker/scripts/hooks/session-end.sh",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+Use **absolute paths** when defining hooks in settings.json.
+
+### 6. Test Hooks Properly
 
 **Critical**: Do NOT test hooks from within a Claude session. Running `claude` from within Claude creates nested sessions that may not trigger hooks properly.
 
@@ -152,7 +202,7 @@ claude "test prompt"
 
 You should see a `session_start` event immediately in Terminal 1, followed by a `session_end` event when the session completes.
 
-### 5. Add Debug Logging
+### 7. Add Debug Logging
 
 Add temporary debug logging to verify hooks are being called:
 
@@ -167,7 +217,7 @@ Then check the debug log:
 tail -f ~/.agent-tracker/debug.log
 ```
 
-### 6. Verify Event Data
+### 8. Verify Event Data
 
 Check that events are being written correctly:
 
