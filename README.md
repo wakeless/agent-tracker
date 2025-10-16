@@ -38,14 +38,33 @@ Have you ever lost track of Claude Code windows? They get left in tabs, suspende
 
 ## Installation
 
-### Step 1: Install Dependencies and Build
+### Option 1: Install from npm (Recommended)
 
 ```bash
+# Install globally
+npm install -g agent-tracker
+
+# Run the TUI
+agent-tracker
+```
+
+### Option 2: Install from Source
+
+#### Step 1: Install Dependencies and Build
+
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/agent-tracker.git
+cd agent-tracker
+
 # Install dependencies
 npm install
 
 # Build the project
 npm run build
+
+# Run the TUI
+npm start
 ```
 
 ### Step 2: Install the Claude Hooks Plugin
@@ -68,6 +87,12 @@ The plugin enables automatic session tracking by installing hooks that fire when
 
 ### Start the Agent Tracker TUI
 
+If installed globally:
+```bash
+agent-tracker
+```
+
+If running from source:
 ```bash
 npm run dev
 # or
@@ -227,7 +252,7 @@ Events are stored in `~/.agent-tracker/sessions.jsonl` in JSONL format:
 
 ## License
 
-ISC
+MIT
 
 ## Contributing
 

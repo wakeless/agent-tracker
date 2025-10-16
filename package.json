@@ -1,12 +1,18 @@
 {
   "name": "agent-tracker",
   "version": "1.0.0",
-  "description": "TypeScript CLI TUI written using Ink",
+  "description": "Real-time TUI dashboard for tracking and monitoring active Claude Code sessions",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
     "agent-tracker": "./dist/cli.js"
   },
+  "files": [
+    "dist",
+    "scripts/hooks",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "dev": "tsx src/cli.tsx",
     "build": "tsc",
@@ -14,16 +20,30 @@
     "test": "vitest",
     "test:watch": "vitest --watch",
     "test:ui": "vitest --ui",
-    "demo:session": "./scripts/test-session.sh"
+    "demo:session": "./scripts/test-session.sh",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
     "cli",
     "tui",
     "ink",
-    "typescript"
+    "typescript",
+    "claude",
+    "claude-code",
+    "session-tracking",
+    "monitoring",
+    "dashboard"
   ],
-  "author": "",
-  "license": "ISC",
+  "author": "Agent Tracker Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/agent-tracker.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/agent-tracker/issues"
+  },
+  "homepage": "https://github.com/yourusername/agent-tracker#readme",
   "devDependencies": {
     "@types/node": "^24.7.2",
     "@types/react": "^19.2.2",
