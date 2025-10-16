@@ -1,0 +1,40 @@
+{
+  "name": "agent-tracker",
+  "version": "1.0.0",
+  "description": "TypeScript CLI TUI written using Ink",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "agent-tracker": "./dist/cli.js"
+  },
+  "scripts": {
+    "dev": "tsx src/cli.tsx",
+    "build": "tsc",
+    "start": "node dist/cli.js",
+    "test": "vitest",
+    "test:watch": "vitest --watch",
+    "test:ui": "vitest --ui",
+    "demo:session": "./scripts/test-session.sh"
+  },
+  "keywords": [
+    "cli",
+    "tui",
+    "ink",
+    "typescript"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^24.7.2",
+    "@types/react": "^19.2.2",
+    "@vitest/ui": "^3.2.4",
+    "ink-testing-library": "^4.0.0",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  },
+  "dependencies": {
+    "ink": "^6.3.1",
+    "react": "^19.2.0"
+  }
+}

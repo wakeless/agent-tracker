@@ -1,0 +1,15 @@
+{
+  "name": "agent-tracker",
+  "owner": {
+    "name": "Agent Tracker Team",
+    "email": "agent-tracker@example.com"
+  },
+  "plugins": [
+    {
+      "name": "agent-tracker",
+      "source": "./",
+      "description": "Tracks Claude Code sessions and displays them in a TUI dashboard",
+      "version": "1.0.0"
+    }
+  ]
+}

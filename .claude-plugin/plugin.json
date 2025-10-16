@@ -1,0 +1,9 @@
+{
+  "name": "agent-tracker",
+  "version": "1.0.0",
+  "description": "Tracks Claude Code sessions and displays them in a TUI dashboard",
+  "author": {
+    "name": "Agent Tracker Team"
+  },
+  "hooks": "./hooks/hooks.json"
+}
