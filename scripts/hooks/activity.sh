@@ -34,6 +34,8 @@ case "$HOOK_EVENT_NAME" in
   "Notification")
     ACTIVITY_TYPE="notification"
     TOOL_NAME="unknown"
+    # Extract notification message
+    NOTIFICATION_MESSAGE=$(echo "$HOOK_DATA" | jq -r '.message // "unknown"')
     ;;
   *)
     # Unknown hook type, skip
@@ -55,6 +57,7 @@ EVENT=$(jq -nc \
   --arg session_id "$SESSION_ID" \
   --arg timestamp "$TIMESTAMP" \
   --arg tool_name "$TOOL_NAME" \
+  --arg notification_message "${NOTIFICATION_MESSAGE:-unknown}" \
   --arg hook_event_name "$HOOK_EVENT_NAME" \
   '{
     event_type: $event_type,
@@ -62,6 +65,7 @@ EVENT=$(jq -nc \
     session_id: $session_id,
     timestamp: $timestamp,
     tool_name: $tool_name,
+    notification_message: $notification_message,
     hook_event_name: $hook_event_name
   }')
 

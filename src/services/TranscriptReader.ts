@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as readline from 'readline';
-import { TranscriptEntry, ParsedTranscriptEntry, AssistantMessage } from '../types/transcript.js';
+import { TranscriptEntry, ParsedTranscriptEntry, AssistantMessage, isSystemMessage } from '../types/transcript.js';
 
 export class TranscriptReader {
   /**
@@ -56,6 +56,7 @@ export class TranscriptReader {
    */
   parseEntry(entry: TranscriptEntry): ParsedTranscriptEntry | null {
     const timestamp = new Date(entry.timestamp);
+    const isSystem = isSystemMessage(entry);
 
     if (entry.type === 'user' && entry.message) {
       // Check for tool_result blocks first
@@ -103,6 +104,7 @@ export class TranscriptReader {
           timestamp,
           type: 'meta',
           content,
+          isSystemMessage: true,
         };
       }
 
@@ -111,6 +113,7 @@ export class TranscriptReader {
         timestamp,
         type: 'user',
         content,
+        isSystemMessage: isSystem,
       };
     }
 
@@ -129,6 +132,7 @@ export class TranscriptReader {
             timestamp,
             type: 'thinking',
             content: thinkingBlock.thinking,
+            isSystemMessage: true, // Thinking is always system
           };
         }
       }
@@ -144,6 +148,7 @@ export class TranscriptReader {
           timestamp,
           type: 'assistant',
           content: textContent,
+          isSystemMessage: isSystem,
         };
       }
 
@@ -173,6 +178,7 @@ export class TranscriptReader {
         content: entry.content || 'System event',
         systemSubtype: entry.subtype,
         compactMetadata: entry.compactMetadata,
+        isSystemMessage: true,
       };
     }
 
@@ -187,6 +193,7 @@ export class TranscriptReader {
         type: 'file-history',
         content: `File history snapshot (${fileCount} files tracked)`,
         fileCount,
+        isSystemMessage: true,
       };
     }
 

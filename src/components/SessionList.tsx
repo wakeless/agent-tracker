@@ -42,13 +42,15 @@ interface SessionListItemProps {
 }
 
 function SessionListItem({ session, isSelected }: SessionListItemProps) {
-  const getStatusColor = (status: Session['status']) => {
+  const getStatusColor = (status: Session['status'], awaitingInput: boolean) => {
+    if (awaitingInput) return 'magenta';
     if (status === 'active') return 'green';
     if (status === 'inactive') return 'yellow';
     return 'gray';
   };
 
-  const getStatusSymbol = (status: Session['status']) => {
+  const getStatusSymbol = (status: Session['status'], awaitingInput: boolean) => {
+    if (awaitingInput) return '⏳';
     if (status === 'active') return '●';
     if (status === 'inactive') return '○';
     return '✕';
@@ -74,19 +76,39 @@ function SessionListItem({ session, isSelected }: SessionListItemProps) {
   // Build display name with iTerm info
   const displayName = tabName || dirName;
 
+  // Format git info
+  const formatGitInfo = (): string | null => {
+    if (!session.git.is_repo) return null;
+
+    let branch = session.git.branch;
+    if (session.git.is_worktree) branch += '*';
+    if (session.git.is_dirty) branch += ' ●';
+
+    return session.git.repo_name !== 'unknown'
+      ? `[${session.git.repo_name}] ${branch}`
+      : branch;
+  };
+
+  const gitInfo = formatGitInfo();
+
   // Build secondary info line
   const terminalInfo = isITerm
     ? 'iTerm2'
     : session.terminal.term_program || 'Terminal';
-  const secondaryInfo = profile
-    ? `${terminalInfo} (${profile}) • ${timeSince}`
-    : `${terminalInfo} • ${timeSince}`;
+
+  const baseParts = [];
+  if (gitInfo) baseParts.push(gitInfo);
+  if (profile) baseParts.push(`${terminalInfo} (${profile})`);
+  else baseParts.push(terminalInfo);
+  baseParts.push(timeSince);
+
+  const secondaryInfo = baseParts.join(' • ');
 
   // Build the full display text as a single string so Ink can properly truncate
   const fullDisplayText =
     tabName && tabName !== dirName
-      ? `${getStatusSymbol(session.status)} ${displayName} (${dirName})`
-      : `${getStatusSymbol(session.status)} ${displayName}`;
+      ? `${getStatusSymbol(session.status, session.awaitingInput)} ${displayName} (${dirName})`
+      : `${getStatusSymbol(session.status, session.awaitingInput)} ${displayName}`;
 
   return (
     <Box width="100%">
@@ -101,8 +123,8 @@ function SessionListItem({ session, isSelected }: SessionListItemProps) {
         <Box minWidth={0}>
           <Text
             bold={isSelected}
-            color={isSelected ? 'cyan' : getStatusColor(session.status)}
-            dimColor={session.status !== 'active'}
+            color={isSelected ? 'cyan' : getStatusColor(session.status, session.awaitingInput)}
+            dimColor={session.status !== 'active' && !session.awaitingInput}
             wrap="truncate-end"
           >
             {fullDisplayText}

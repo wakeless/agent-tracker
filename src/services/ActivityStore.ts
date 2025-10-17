@@ -41,9 +41,11 @@ export function activityReducer(state: ActivityState, action: Action): ActivityS
         cwd: payload.cwd,
         transcriptPath: payload.transcript_path,
         terminal: payload.terminal,
+        git: payload.git,
         status: 'active',
         startTime: new Date(payload.timestamp),
         lastActivityTime: new Date(payload.timestamp),
+        awaitingInput: false,
       };
 
       const newSessions = new Map(state.sessions);
@@ -88,10 +90,6 @@ export function activityReducer(state: ActivityState, action: Action): ActivityS
       };
     }
 
-    case 'ACTIVITY_TOOL_USE':
-    case 'ACTIVITY_PROMPT_SUBMIT':
-    case 'ACTIVITY_STOP':
-    case 'ACTIVITY_SUBAGENT_STOP':
     case 'ACTIVITY_NOTIFICATION': {
       const { payload } = action;
       const session = state.sessions.get(payload.session_id);
@@ -102,7 +100,101 @@ export function activityReducer(state: ActivityState, action: Action): ActivityS
       newSessions.set(payload.session_id, {
         ...session,
         lastActivityTime: new Date(payload.timestamp),
-        status: 'active', // Mark as active on any activity
+        status: 'active',
+        awaitingInput: true, // Set awaiting input on notification
+        notificationMessage: payload.notification_message,
+      });
+
+      const newRecentActivity = [payload, ...state.recentActivity].slice(0, 100);
+
+      return {
+        ...state,
+        sessions: newSessions,
+        recentActivity: newRecentActivity,
+        stats: {
+          totalEvents: state.stats.totalEvents + 1,
+          eventsByType: {
+            ...state.stats.eventsByType,
+            [action.type]: (state.stats.eventsByType[action.type] || 0) + 1,
+          },
+        },
+      };
+    }
+
+    case 'ACTIVITY_PROMPT_SUBMIT':
+    case 'ACTIVITY_TOOL_USE': {
+      const { payload } = action;
+      const session = state.sessions.get(payload.session_id);
+
+      if (!session || session.status === 'ended') return state;
+
+      const newSessions = new Map(state.sessions);
+      newSessions.set(payload.session_id, {
+        ...session,
+        lastActivityTime: new Date(payload.timestamp),
+        status: 'active',
+        awaitingInput: false, // Clear awaiting input on user response or tool use
+        notificationMessage: undefined,
+      });
+
+      const newRecentActivity = [payload, ...state.recentActivity].slice(0, 100);
+
+      return {
+        ...state,
+        sessions: newSessions,
+        recentActivity: newRecentActivity,
+        stats: {
+          totalEvents: state.stats.totalEvents + 1,
+          eventsByType: {
+            ...state.stats.eventsByType,
+            [action.type]: (state.stats.eventsByType[action.type] || 0) + 1,
+          },
+        },
+      };
+    }
+
+    case 'ACTIVITY_STOP': {
+      const { payload } = action;
+      const session = state.sessions.get(payload.session_id);
+
+      if (!session || session.status === 'ended') return state;
+
+      const newSessions = new Map(state.sessions);
+      newSessions.set(payload.session_id, {
+        ...session,
+        lastActivityTime: new Date(payload.timestamp),
+        status: 'active',
+        awaitingInput: true, // Agent finished responding, now awaiting user input
+        notificationMessage: 'Awaiting user input',
+      });
+
+      const newRecentActivity = [payload, ...state.recentActivity].slice(0, 100);
+
+      return {
+        ...state,
+        sessions: newSessions,
+        recentActivity: newRecentActivity,
+        stats: {
+          totalEvents: state.stats.totalEvents + 1,
+          eventsByType: {
+            ...state.stats.eventsByType,
+            [action.type]: (state.stats.eventsByType[action.type] || 0) + 1,
+          },
+        },
+      };
+    }
+
+    case 'ACTIVITY_SUBAGENT_STOP': {
+      const { payload } = action;
+      const session = state.sessions.get(payload.session_id);
+
+      if (!session || session.status === 'ended') return state;
+
+      const newSessions = new Map(state.sessions);
+      newSessions.set(payload.session_id, {
+        ...session,
+        lastActivityTime: new Date(payload.timestamp),
+        status: 'active',
       });
 
       const newRecentActivity = [payload, ...state.recentActivity].slice(0, 100);
@@ -213,12 +305,17 @@ export class ActivityStore {
   }
 
   /**
-   * Get all sessions, sorted by activity (most recent first)
+   * Get all sessions, sorted by priority
+   * Priority order: awaiting input > active > inactive > ended
    */
   getSessions(): Session[] {
     const sessions = Array.from(this.state.sessions.values());
 
     return sessions.sort((a, b) => {
+      // Awaiting input sessions always at top (highest priority)
+      if (a.awaitingInput && !b.awaitingInput) return -1;
+      if (b.awaitingInput && !a.awaitingInput) return 1;
+
       // Ended sessions always go to bottom
       if (a.status === 'ended' && b.status !== 'ended') return 1;
       if (b.status === 'ended' && a.status !== 'ended') return -1;
@@ -242,18 +339,20 @@ export class ActivityStore {
   /**
    * Get count of sessions by status
    */
-  getSessionCounts(): { active: number; inactive: number; ended: number; total: number } {
+  getSessionCounts(): { active: number; inactive: number; ended: number; awaitingInput: number; total: number } {
     let active = 0;
     let inactive = 0;
     let ended = 0;
+    let awaitingInput = 0;
 
     for (const session of this.state.sessions.values()) {
+      if (session.awaitingInput) awaitingInput++;
       if (session.status === 'active') active++;
       else if (session.status === 'inactive') inactive++;
       else if (session.status === 'ended') ended++;
     }
 
-    return { active, inactive, ended, total: this.state.sessions.size };
+    return { active, inactive, ended, awaitingInput, total: this.state.sessions.size };
   }
 
   /**

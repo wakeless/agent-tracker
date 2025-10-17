@@ -27,9 +27,11 @@ export class SessionStore {
       cwd: event.cwd,
       transcriptPath: event.transcript_path,
       terminal: event.terminal,
+      git: event.git,
       status: 'active',
       startTime: new Date(event.timestamp),
       lastActivityTime: new Date(event.timestamp),
+      awaitingInput: false,
     };
 
     this.sessions.set(event.session_id, session);

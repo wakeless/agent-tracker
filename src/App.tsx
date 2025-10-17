@@ -221,6 +221,12 @@ export function App() {
           <Text>Total: </Text>
           <Text bold>{counts.total}</Text>
         </Box>
+        {counts.awaitingInput > 0 && (
+          <Box marginRight={2}>
+            <Text color="magenta">⏳ Awaiting Input: </Text>
+            <Text bold color="magenta">{counts.awaitingInput}</Text>
+          </Box>
+        )}
         <Box marginRight={2}>
           <Text color="green">Active: </Text>
           <Text bold color="green">{counts.active}</Text>

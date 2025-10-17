@@ -105,4 +105,25 @@ export interface ParsedTranscriptEntry {
   };
   // File history fields
   fileCount?: number;
+  // System message indicator
+  isSystemMessage?: boolean;
+}
+
+/**
+ * Identifies if a transcript entry is a system message.
+ * System messages include:
+ * - Sidechain messages (warmup, etc.)
+ * - System type entries
+ * - Meta messages
+ *
+ * Note: This checks the raw TranscriptEntry.
+ * For parsed entries, check if ParsedTranscriptEntry.isSystemMessage is true
+ * or if type is 'thinking', 'system', 'meta', or 'file-history'
+ */
+export function isSystemMessage(entry: TranscriptEntry): boolean {
+  return (
+    entry.isSidechain === true ||
+    entry.type === 'system' ||
+    entry.isMeta === true
+  );
 }

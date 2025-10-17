@@ -1,4 +1,5 @@
 import { ParsedTranscriptEntry } from '../types/transcript.js';
+import { filterUserConversation } from '../utils/transcriptFilters.js';
 
 export interface TranscriptState {
   entries: ParsedTranscriptEntry[];
@@ -19,21 +20,14 @@ export type TranscriptAction =
   | { type: 'SET_ERROR'; error: string | null };
 
 /**
- * Filter entries based on system entries toggle
+ * Filter entries based on system entries toggle.
+ * Uses the canonical filterUserConversation utility for consistency.
  */
 function filterEntries(
   entries: ParsedTranscriptEntry[],
   showSystemEntries: boolean
 ): ParsedTranscriptEntry[] {
-  return showSystemEntries
-    ? entries
-    : entries.filter(
-        (e) =>
-          e.type !== 'system' &&
-          e.type !== 'file-history' &&
-          e.type !== 'meta' &&
-          e.type !== 'tool_result'
-      );
+  return showSystemEntries ? entries : filterUserConversation(entries);
 }
 
 /**

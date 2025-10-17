@@ -70,6 +70,16 @@ elif grep -qa docker /proc/1/cgroup 2>/dev/null; then
   DOCKER_CONTAINER_NAME=$(hostname 2>/dev/null || echo "unknown")
 fi
 
+# Get git information
+GIT_INFO_JSON=$("${SCRIPT_DIR}/providers/git-info.sh" "$CWD" 2>/dev/null || echo '{"is_repo":false,"branch":"unknown","is_worktree":false,"is_dirty":false,"repo_name":"unknown"}')
+
+# Extract git fields
+GIT_IS_REPO=$(echo "$GIT_INFO_JSON" | jq -r '.is_repo')
+GIT_BRANCH=$(echo "$GIT_INFO_JSON" | jq -r '.branch')
+GIT_IS_WORKTREE=$(echo "$GIT_INFO_JSON" | jq -r '.is_worktree')
+GIT_IS_DIRTY=$(echo "$GIT_INFO_JSON" | jq -r '.is_dirty')
+GIT_REPO_NAME=$(echo "$GIT_INFO_JSON" | jq -r '.repo_name')
+
 # Get timestamp (macOS compatible)
 TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
@@ -98,6 +108,11 @@ EVENT=$(jq -nc \
   --arg docker_container "$DOCKER_CONTAINER" \
   --arg docker_container_id "$DOCKER_CONTAINER_ID" \
   --arg docker_container_name "$DOCKER_CONTAINER_NAME" \
+  --argjson git_is_repo "$GIT_IS_REPO" \
+  --arg git_branch "$GIT_BRANCH" \
+  --argjson git_is_worktree "$GIT_IS_WORKTREE" \
+  --argjson git_is_dirty "$GIT_IS_DIRTY" \
+  --arg git_repo_name "$GIT_REPO_NAME" \
   --arg timestamp "$TIMESTAMP" \
   '{
     event_type: $event_type,
@@ -124,6 +139,13 @@ EVENT=$(jq -nc \
       is_container: ($docker_container == "true"),
       container_id: $docker_container_id,
       container_name: $docker_container_name
+    },
+    git: {
+      is_repo: $git_is_repo,
+      branch: $git_branch,
+      is_worktree: $git_is_worktree,
+      is_dirty: $git_is_dirty,
+      repo_name: $git_repo_name
     },
     timestamp: $timestamp
   }')

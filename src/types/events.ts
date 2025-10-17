@@ -22,6 +22,18 @@ export interface DockerInfo {
 }
 
 /**
+ * Git repository information captured by hook scripts.
+ * Provides context about the git repo state at session start/end.
+ */
+export interface GitInfo {
+  is_repo: boolean;
+  branch: string;
+  is_worktree: boolean;
+  is_dirty: boolean;
+  repo_name: string;
+}
+
+/**
  * Terminal information captured by hook scripts.
  * The `iterm` field contains terminal-specific data from the active provider.
  *
@@ -50,6 +62,7 @@ export interface BaseEvent {
   transcript_path: string;
   terminal: TerminalInfo;
   docker: DockerInfo;
+  git: GitInfo;
   timestamp: string;
 }
 
@@ -71,6 +84,7 @@ export interface ActivityEvent {
   session_id: string;
   timestamp: string;
   tool_name?: string; // Present for tool_use events
+  notification_message?: string; // Present for notification events (permission requests, idle state)
   hook_event_name?: string; // Original hook name for debugging
 }
 

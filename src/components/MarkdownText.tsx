@@ -1,13 +1,14 @@
 // Force chalk to use colors BEFORE importing marked-terminal
 // marked-terminal uses chalk internally, and chalk checks this env var on import
 if (!process.env.FORCE_COLOR) {
-  process.env.FORCE_COLOR = '1';
+  process.env.FORCE_COLOR = '3'; // Force truecolor support
 }
 
 import React, { useMemo } from 'react';
 import { Text } from 'ink';
 import { marked } from 'marked';
 import markedTerminal from 'marked-terminal';
+import chalk from 'chalk';
 
 interface MarkdownTextProps {
   children: string;
@@ -15,7 +16,7 @@ interface MarkdownTextProps {
 
 /**
  * Renders markdown text in the terminal using marked and marked-terminal.
- * Provides a wrapper around Ink's Text component that supports markdown formatting.
+ * Converts markdown to ANSI formatted text that Ink can display.
  */
 export function MarkdownText({ children }: MarkdownTextProps) {
   const rendered = useMemo(() => {
@@ -24,6 +25,9 @@ export function MarkdownText({ children }: MarkdownTextProps) {
     }
 
     try {
+      // Ensure chalk is in color mode
+      chalk.level = 3; // Force truecolor
+
       // Configure marked to use terminal renderer
       marked.setOptions({
         // @ts-expect-error - marked-terminal types may not be fully compatible
@@ -33,7 +37,7 @@ export function MarkdownText({ children }: MarkdownTextProps) {
           // Use single line breaks
           reflowText: true,
           // Configure code block width
-          width: 80,
+          width: 100,
         }),
       });
 

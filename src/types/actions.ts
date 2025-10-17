@@ -12,6 +12,7 @@ export interface ActivityEvent {
   session_id: string;
   timestamp: string;
   tool_name?: string; // Present for tool_use events
+  notification_message?: string; // Present for notification events
   hook_event_name?: string; // Original hook name for debugging
 }
 
