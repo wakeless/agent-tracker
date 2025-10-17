@@ -59,6 +59,16 @@ function SessionListItem({ session, isSelected }: SessionListItemProps) {
   // Extract directory name from path
   const dirName = session.cwd.split('/').pop() || session.cwd;
 
+  // Build project identifier from git info
+  const getProjectName = (): string => {
+    if (session.git.is_repo && session.git.repo_name !== 'unknown') {
+      // For git repos, show repo/branch (e.g., "pipie/main")
+      return `${session.git.repo_name}/${session.git.branch}`;
+    }
+    // Fall back to directory name for non-git projects
+    return dirName;
+  };
+
   // Format time since last activity
   const timeSince = formatTimeSince(session.lastActivityTime);
 
@@ -73,23 +83,21 @@ function SessionListItem({ session, isSelected }: SessionListItemProps) {
       ? session.terminal.iterm.profile
       : null;
 
-  // Build display name with iTerm info
-  const displayName = tabName || dirName;
+  // Build display name: prefer iTerm tab name, then project name
+  const displayName = tabName || getProjectName();
 
-  // Format git info
-  const formatGitInfo = (): string | null => {
+  // Format git status indicators (worktree and dirty)
+  const formatGitStatus = (): string | null => {
     if (!session.git.is_repo) return null;
 
-    let branch = session.git.branch;
-    if (session.git.is_worktree) branch += '*';
-    if (session.git.is_dirty) branch += ' ●';
+    const indicators = [];
+    if (session.git.is_worktree) indicators.push('worktree');
+    if (session.git.is_dirty) indicators.push('uncommitted changes');
 
-    return session.git.repo_name !== 'unknown'
-      ? `[${session.git.repo_name}] ${branch}`
-      : branch;
+    return indicators.length > 0 ? indicators.join(', ') : null;
   };
 
-  const gitInfo = formatGitInfo();
+  const gitStatus = formatGitStatus();
 
   // Build secondary info line
   const terminalInfo = isITerm
@@ -97,7 +105,7 @@ function SessionListItem({ session, isSelected }: SessionListItemProps) {
     : session.terminal.term_program || 'Terminal';
 
   const baseParts = [];
-  if (gitInfo) baseParts.push(gitInfo);
+  if (gitStatus) baseParts.push(gitStatus);
   if (profile) baseParts.push(`${terminalInfo} (${profile})`);
   else baseParts.push(terminalInfo);
   baseParts.push(timeSince);

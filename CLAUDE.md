@@ -12,6 +12,15 @@ As an LLM agent working on this project:
    - Provider pattern for terminal detection
    - Event-driven architecture
    - Type-safe discriminated unions
+5. **Cross-Component Data Usage**: When adding or modifying data in types/state:
+   - **Search for all usages** of related types across the codebase
+   - **Check all UI components** that display session/activity data
+   - **Update consistently** across SessionList, SessionDetail, and any other views
+   - **Example**: If adding `session.awaitingInput`, check:
+     - `src/components/SessionList.tsx` - List view display
+     - `src/components/SessionDetail.tsx` - Detail view display
+     - `src/services/ActivityStore.ts` - State management
+     - `src/types/session.ts` - Type definitions
 
 ## Technical Reference
 

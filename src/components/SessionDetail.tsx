@@ -34,6 +34,14 @@ export function SessionDetail({ session, recentTranscript = [] }: SessionDetailP
 
       <TerminalBreadcrumb session={session} />
 
+      {/* Project Identifier */}
+      {session.git.is_repo && session.git.repo_name !== 'unknown' && (
+        <DetailRow
+          label="Project"
+          value={`${session.git.repo_name}/${session.git.branch}`}
+        />
+      )}
+
       <DetailRow label="Session ID" value={session.id} />
       <DetailRow label="Working Directory" value={session.cwd} />
 
