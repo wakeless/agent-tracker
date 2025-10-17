@@ -122,7 +122,7 @@ interface DetailRowProps {
 function DetailRow({ label, value }: DetailRowProps) {
   return (
     <Box>
-      <Box width={20}>
+      <Box width={22}>
         <Text dimColor>{label}:</Text>
       </Box>
       <Text>{value}</Text>

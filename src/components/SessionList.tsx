@@ -19,7 +19,7 @@ export function SessionList({ sessions, selectedIndex }: SessionListProps) {
   }
 
   return (
-    <Box flexDirection="column" padding={1}>
+    <Box flexDirection="column" padding={1} width="100%">
       <Box marginBottom={1}>
         <Text bold underline>
           Sessions ({sessions.length})
@@ -62,48 +62,54 @@ function SessionListItem({ session, isSelected }: SessionListItemProps) {
 
   // Get iTerm-specific information if available
   const isITerm = session.terminal.term_program === 'iTerm.app';
-  const tabName = isITerm && session.terminal.iterm.tab_name !== 'unknown'
-    ? session.terminal.iterm.tab_name
-    : null;
-  const profile = isITerm && session.terminal.iterm.profile !== 'unknown'
-    ? session.terminal.iterm.profile
-    : null;
+  const tabName =
+    isITerm && session.terminal.iterm.tab_name !== 'unknown'
+      ? sanitizeDisplayText(session.terminal.iterm.tab_name)
+      : null;
+  const profile =
+    isITerm && session.terminal.iterm.profile !== 'unknown'
+      ? session.terminal.iterm.profile
+      : null;
 
   // Build display name with iTerm info
   const displayName = tabName || dirName;
 
   // Build secondary info line
-  const terminalInfo = isITerm ? 'iTerm2' : session.terminal.term_program || 'Terminal';
+  const terminalInfo = isITerm
+    ? 'iTerm2'
+    : session.terminal.term_program || 'Terminal';
   const secondaryInfo = profile
     ? `${terminalInfo} (${profile}) • ${timeSince}`
     : `${terminalInfo} • ${timeSince}`;
 
+  // Build the full display text as a single string so Ink can properly truncate
+  const fullDisplayText =
+    tabName && tabName !== dirName
+      ? `${getStatusSymbol(session.status)} ${displayName} (${dirName})`
+      : `${getStatusSymbol(session.status)} ${displayName}`;
+
   return (
-    <Box>
-      <Box width={2}>
-        {isSelected && <Text bold color="cyan">{'> '}</Text>}
-      </Box>
-      <Box flexDirection="column" flexGrow={1}>
-        <Box>
-          <Text
-            color={getStatusColor(session.status)}
-            dimColor={session.status === 'ended'}
-          >
-            {getStatusSymbol(session.status)}{' '}
+    <Box width="100%">
+      <Box width={2} flexShrink={0}>
+        {isSelected && (
+          <Text bold color="cyan">
+            {'> '}
           </Text>
+        )}
+      </Box>
+      <Box flexDirection="column" flexGrow={1} minWidth={0}>
+        <Box minWidth={0}>
           <Text
             bold={isSelected}
-            color={isSelected ? 'cyan' : undefined}
+            color={isSelected ? 'cyan' : getStatusColor(session.status)}
             dimColor={session.status !== 'active'}
+            wrap="truncate-end"
           >
-            {displayName}
+            {fullDisplayText}
           </Text>
-          {tabName && tabName !== dirName && (
-            <Text dimColor> ({dirName})</Text>
-          )}
         </Box>
-        <Box marginLeft={2}>
-          <Text dimColor>
+        <Box marginLeft={2} minWidth={0}>
+          <Text dimColor wrap="truncate-end">
             {secondaryInfo}
           </Text>
         </Box>
@@ -125,4 +131,15 @@ function formatTimeSince(date: Date): string {
 
   const days = Math.floor(hours / 24);
   return `${days}d ago`;
+}
+
+function sanitizeDisplayText(text: string): string {
+  // Remove control characters (0x00-0x1F, 0x7F-0x9F)
+  // Remove zero-width characters and other invisible Unicode characters
+  return text
+    .replace(/[\x00-\x1F\x7F-\x9F]/g, "") // ASCII/Extended control characters
+    .replace(/[\u200B-\u200F]/g, "") // Zero-width spaces, joiners, etc.
+    .replace(/[\uFEFF]/g, "") // Zero-width no-break space (BOM)
+    .replace(/[\u2060-\u206F]/g, "") // Word joiner, invisible operators
+    .trim();
 }
