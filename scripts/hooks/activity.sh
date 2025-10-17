@@ -12,6 +12,10 @@ HOOK_DATA=$(cat)
 SESSION_ID=$(echo "$HOOK_DATA" | jq -r '.session_id // "unknown"')
 HOOK_EVENT_NAME=$(echo "$HOOK_DATA" | jq -r '.hook_event_name // "unknown"')
 
+# Initialize optional fields
+TOOL_NAME="unknown"
+NOTIFICATION_MESSAGE="unknown"
+
 # Map hook event names to activity types
 case "$HOOK_EVENT_NAME" in
   "PostToolUse")
@@ -21,19 +25,15 @@ case "$HOOK_EVENT_NAME" in
     ;;
   "UserPromptSubmit")
     ACTIVITY_TYPE="prompt_submit"
-    TOOL_NAME="unknown"
     ;;
   "Stop")
     ACTIVITY_TYPE="stop"
-    TOOL_NAME="unknown"
     ;;
   "SubagentStop")
     ACTIVITY_TYPE="subagent_stop"
-    TOOL_NAME="unknown"
     ;;
   "Notification")
     ACTIVITY_TYPE="notification"
-    TOOL_NAME="unknown"
     # Extract notification message
     NOTIFICATION_MESSAGE=$(echo "$HOOK_DATA" | jq -r '.message // "unknown"')
     ;;
@@ -57,7 +57,7 @@ EVENT=$(jq -nc \
   --arg session_id "$SESSION_ID" \
   --arg timestamp "$TIMESTAMP" \
   --arg tool_name "$TOOL_NAME" \
-  --arg notification_message "${NOTIFICATION_MESSAGE:-unknown}" \
+  --arg notification_message "$NOTIFICATION_MESSAGE" \
   --arg hook_event_name "$HOOK_EVENT_NAME" \
   '{
     event_type: $event_type,
