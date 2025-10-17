@@ -2,6 +2,8 @@ import React from 'react';
 import { Box, Text } from 'ink';
 import { Session } from '../types/session.js';
 import { ParsedTranscriptEntry } from '../types/transcript.js';
+import { getRecentConversation } from '../utils/transcriptFilters.js';
+import { TerminalBreadcrumb } from './TerminalBreadcrumb.js';
 
 interface SessionDetailProps {
   session: Session | null;
@@ -30,36 +32,31 @@ export function SessionDetail({ session, recentTranscript = [] }: SessionDetailP
         <StatusBadge status={session.status} />
       </Box>
 
+      <TerminalBreadcrumb session={session} />
+
       <DetailRow label="Session ID" value={session.id} />
       <DetailRow label="Working Directory" value={session.cwd} />
 
-      <Box marginTop={1} marginBottom={1}>
-        <Text bold underline>Terminal Information</Text>
-      </Box>
-
-      <DetailRow label="Program" value={session.terminal.term_program} />
-
-      {/* iTerm2-specific information */}
-      {session.terminal.term_program === 'iTerm.app' && (
+      {/* Git Information */}
+      {session.git.is_repo && (
         <React.Fragment>
-          {session.terminal.iterm.tab_name !== 'unknown' && (
-            <DetailRow label="iTerm Tab" value={session.terminal.iterm.tab_name} />
+          <Box marginTop={1} marginBottom={1}>
+            <Text bold underline>Git Information</Text>
+          </Box>
+
+          {session.git.repo_name !== 'unknown' && (
+            <DetailRow label="Repository" value={session.git.repo_name} />
           )}
-          {session.terminal.iterm.window_name !== 'unknown' && (
-            <DetailRow label="iTerm Window" value={session.terminal.iterm.window_name} />
-          )}
-          {session.terminal.iterm.profile !== 'unknown' && (
-            <DetailRow label="iTerm Profile" value={session.terminal.iterm.profile} />
-          )}
-          {session.terminal.iterm.session_id !== 'unknown' && (
-            <DetailRow label="iTerm Session ID" value={session.terminal.iterm.session_id} />
-          )}
+          <DetailRow
+            label="Branch"
+            value={`${session.git.branch}${session.git.is_worktree ? ' (worktree)' : ''}`}
+          />
+          <DetailRow
+            label="Status"
+            value={session.git.is_dirty ? 'Dirty (uncommitted changes)' : 'Clean'}
+          />
         </React.Fragment>
       )}
-
-      <DetailRow label="TTY" value={session.terminal.tty} />
-      <DetailRow label="Shell" value={session.terminal.shell} />
-      <DetailRow label="TERM" value={session.terminal.term} />
 
       <Box marginTop={1} marginBottom={1}>
         <Text bold underline>Timestamps</Text>
@@ -77,7 +74,7 @@ export function SessionDetail({ session, recentTranscript = [] }: SessionDetailP
           <Box marginTop={1} marginBottom={1}>
             <Text bold underline>Recent Conversation</Text>
           </Box>
-          {recentTranscript.slice(-5).map((entry, index) => {
+          {getRecentConversation(recentTranscript, 5).map((entry, index) => {
             const maxLength = 60;
             const truncatedContent = entry.content.length > maxLength
               ? entry.content.substring(0, maxLength) + '...'
