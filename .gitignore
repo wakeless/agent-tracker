@@ -5,3 +5,5 @@ dist/
 coverage/
 .vitest-cache/
 .claude/settings.local.json
+.beads/*.db
+.beads/*.db-*
