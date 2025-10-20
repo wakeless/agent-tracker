@@ -234,6 +234,7 @@ export function App({ eventsFilePath }: AppProps = {}) {
         key={selectedSession.id}
         transcriptPath={selectedSession.transcriptPath}
         sessionId={selectedSession.id}
+        session={selectedSession}
         onShowToolDetail={handleShowToolDetail}
       />
     );

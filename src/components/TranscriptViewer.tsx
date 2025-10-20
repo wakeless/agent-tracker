@@ -3,6 +3,7 @@ import { Box, Text, useInput } from 'ink';
 import { TranscriptReader } from '../services/TranscriptReader.js';
 import { TranscriptWatcher } from '../services/TranscriptWatcher.js';
 import { ParsedTranscriptEntry } from '../types/transcript.js';
+import { Session } from '../types/session.js';
 import { MarkdownText } from './MarkdownText.js';
 import { ToolDisplay } from './tools/index.js';
 import {
@@ -16,10 +17,11 @@ import {
 interface TranscriptViewerProps {
   transcriptPath: string;
   sessionId: string;
+  session: Session;
   onShowToolDetail?: (toolEntry: ParsedTranscriptEntry, allEntries: ParsedTranscriptEntry[]) => void;
 }
 
-export function TranscriptViewer({ transcriptPath, sessionId, onShowToolDetail }: TranscriptViewerProps) {
+export function TranscriptViewer({ transcriptPath, sessionId, session, onShowToolDetail }: TranscriptViewerProps) {
   const [state, dispatch] = useReducer(transcriptReducer, initialState);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -125,6 +127,45 @@ export function TranscriptViewer({ transcriptPath, sessionId, onShowToolDetail }
   }
 
   if (error) {
+    // Check if this is a brand new session (within 10 seconds of start time)
+    const now = Date.now();
+    const sessionAge = now - session.startTime.getTime();
+    const isNewSession = sessionAge < 10000; // 10 seconds
+
+    // Show different message for new sessions vs actual errors
+    if (isNewSession && error.includes('Transcript file not found')) {
+      return (
+        <Box flexDirection="column" padding={1}>
+          <Box marginBottom={1}>
+            <Text bold color="cyan">
+              Transcript Viewer
+            </Text>
+            <Text dimColor> - New Session</Text>
+          </Box>
+          <Box marginBottom={1} flexDirection="column">
+            <Text color="yellow">⏳ Waiting for session activity...</Text>
+            <Box marginTop={1}>
+              <Text>
+                This session was just started. The transcript will become available once you interact with the Claude session.
+              </Text>
+            </Box>
+          </Box>
+          <Box marginTop={1} flexDirection="column">
+            <Text dimColor bold>What to do:</Text>
+            <Box marginLeft={2} flexDirection="column">
+              <Text dimColor>• Switch to your Claude session</Text>
+              <Text dimColor>• Send a message or interact with Claude</Text>
+              <Text dimColor>• Return here to view the transcript</Text>
+            </Box>
+          </Box>
+          <Box marginTop={1}>
+            <Text dimColor>Press ESC to return to list</Text>
+          </Box>
+        </Box>
+      );
+    }
+
+    // Show generic error for other cases
     return (
       <Box flexDirection="column" padding={1}>
         <Box marginBottom={1}>
