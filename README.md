@@ -2,6 +2,8 @@
 
 A CLI TUI tool for tracking active Claude Code sessions. Never lose track of your Claude windows again!
 
+🌐 **[Visit the Homepage](https://pipie.io/agent-tracker/)** - Learn why I built this and see it in action.
+
 ## Features
 
 - **Real-time Session Tracking**: Automatically detects when Claude Code sessions start and end

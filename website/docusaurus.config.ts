@@ -56,7 +56,8 @@ const config: Config = {
     // Replace with your project's social card
     image: 'img/docusaurus-social-card.jpg',
     colorMode: {
-      respectPrefersColorScheme: true,
+      defaultMode: 'light',
+      respectPrefersColorScheme: false,
     },
     navbar: {
       title: 'Agent Tracker',
@@ -108,6 +109,15 @@ const config: Config = {
             {
               label: 'Issues',
               href: 'https://github.com/wakeless/agent-tracker/issues',
+            },
+          ],
+        },
+        {
+          title: 'Developer',
+          items: [
+            {
+              label: 'Pipie',
+              href: 'https://pipie.io/',
             },
           ],
         },
