@@ -107,7 +107,6 @@ function SessionListItem({ session, isSelected }: SessionListItemProps) {
         <Box minWidth={0}>
           {/* Status symbol */}
           <Text
-            key="status"
             bold={isSelected}
             color={isSelected ? 'cyan' : getStatusColor(session.status, session.awaitingInput)}
             dimColor={session.status !== 'active' && !session.awaitingInput}
@@ -117,7 +116,6 @@ function SessionListItem({ session, isSelected }: SessionListItemProps) {
 
           {/* Repo name with stable background color */}
           <Text
-            key="repo"
             bold={isSelected}
             backgroundColor={isSelected ? undefined : repoColors.backgroundColor}
             color={isSelected ? 'cyan' : repoColors.foregroundColor}
@@ -127,25 +125,24 @@ function SessionListItem({ session, isSelected }: SessionListItemProps) {
 
           {/* Branch with stable background color (if git repo) */}
           {branch && branchColors && (
-            <React.Fragment key="branch-fragment">
-              <Text key="branch-colon" bold={isSelected} dimColor>:</Text>
+            <>
+              <Text bold={isSelected} dimColor>:</Text>
               <Text
-                key="branch-name"
                 bold={isSelected}
                 backgroundColor={isSelected ? undefined : branchColors.backgroundColor}
                 color={isSelected ? 'cyan' : branchColors.foregroundColor}
               >
                 {isSelected ? branch : ` ${branch} `}
               </Text>
-            </React.Fragment>
+            </>
           )}
 
           {/* Tab name (if available) */}
           {tabName && (
-            <React.Fragment key="tab-fragment">
-              <Text key="tab-separator" dimColor> – </Text>
-              <Text key="tab-name" dimColor>{tabName}</Text>
-            </React.Fragment>
+            <>
+              <Text dimColor> – </Text>
+              <Text dimColor>{tabName}</Text>
+            </>
           )}
         </Box>
         <Box marginLeft={2} minWidth={0}>

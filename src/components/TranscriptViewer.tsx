@@ -19,9 +19,18 @@ interface TranscriptViewerProps {
   sessionId: string;
   session: Session;
   onShowToolDetail?: (toolEntry: ParsedTranscriptEntry, allEntries: ParsedTranscriptEntry[]) => void;
+  initialSelectedUuid?: string; // Restore scroll position from navigation stack
+  onSelectionChange?: (selectedUuid: string) => void; // Save scroll position to navigation stack
 }
 
-export function TranscriptViewer({ transcriptPath, sessionId, session, onShowToolDetail }: TranscriptViewerProps) {
+export function TranscriptViewer({
+  transcriptPath,
+  sessionId,
+  session,
+  onShowToolDetail,
+  initialSelectedUuid,
+  onSelectionChange
+}: TranscriptViewerProps) {
   const [state, dispatch] = useReducer(transcriptReducer, initialState);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -45,7 +54,11 @@ export function TranscriptViewer({ transcriptPath, sessionId, session, onShowToo
         setError(null);
         const reader = new TranscriptReader();
         const parsedEntries = await reader.readTranscript(transcriptPath);
-        dispatch({ type: 'LOAD_TRANSCRIPT', entries: parsedEntries });
+        dispatch({
+          type: 'LOAD_TRANSCRIPT',
+          entries: parsedEntries,
+          initialSelectedUuid: initialSelectedUuid // Restore scroll position if provided
+        });
         lastTranscriptPathRef.current = transcriptPath;
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load transcript');
@@ -106,6 +119,10 @@ export function TranscriptViewer({ transcriptPath, sessionId, session, onShowToo
     else if (key.return && onShowToolDetail) {
       const currentEntry = visibleEntries.find((e) => e.uuid === state.selectedUuid);
       if (currentEntry && currentEntry.type === 'tool_use') {
+        // Save current position before navigating away
+        if (onSelectionChange && state.selectedUuid) {
+          onSelectionChange(state.selectedUuid);
+        }
         // Pass all entries (not just visible) so we can find the tool_result
         onShowToolDetail(currentEntry, state.entries);
       }

@@ -30,14 +30,14 @@ export function TodoWriteTool({ toolInput, mode }: ToolDisplayProps) {
   // Expanded mode - show full checklist
   return (
     <Box flexDirection="column">
-      {todos.map((todo, index) => {
+      {todos.map((todo) => {
         const icon =
           todo.status === 'completed' ? '✓' : todo.status === 'in_progress' ? '◐' : '○';
         const color =
           todo.status === 'completed' ? 'green' : todo.status === 'in_progress' ? 'yellow' : 'gray';
 
         return (
-          <Box key={index}>
+          <Box key={todo.content}>
             <Text color={color}>{icon} </Text>
             <Text color={todo.status === 'completed' ? 'green' : undefined}>{todo.content}</Text>
           </Box>

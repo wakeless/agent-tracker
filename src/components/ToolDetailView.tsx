@@ -1,21 +1,15 @@
 import React from 'react';
-import { Box, Text, useInput } from 'ink';
+import { Box, Text } from 'ink';
 import { ParsedTranscriptEntry } from '../types/transcript.js';
 import { MarkdownText } from './MarkdownText.js';
 
 interface ToolDetailViewProps {
   toolUseEntry: ParsedTranscriptEntry;
   toolResultEntry: ParsedTranscriptEntry | null;
-  onBack: () => void;
 }
 
-export function ToolDetailView({ toolUseEntry, toolResultEntry, onBack }: ToolDetailViewProps) {
-  // Handle keyboard input
-  useInput((input, key) => {
-    if (key.escape) {
-      onBack();
-    }
-  });
+export function ToolDetailView({ toolUseEntry, toolResultEntry }: ToolDetailViewProps) {
+  // Keyboard input (ESC) is handled globally by App.tsx navigation stack
 
   const formatTime = (date: Date): string => {
     return date.toLocaleTimeString('en-US', {

@@ -9,7 +9,7 @@ export interface TranscriptState {
 }
 
 export type TranscriptAction =
-  | { type: 'LOAD_TRANSCRIPT'; entries: ParsedTranscriptEntry[] }
+  | { type: 'LOAD_TRANSCRIPT'; entries: ParsedTranscriptEntry[]; initialSelectedUuid?: string }
   | { type: 'APPEND_ENTRIES'; entries: ParsedTranscriptEntry[] }
   | { type: 'TOGGLE_SYSTEM_ENTRIES' }
   | { type: 'NAVIGATE_UP' }
@@ -75,7 +75,8 @@ export function transcriptReducer(
         ...state,
         entries: action.entries,
         seenFilteredCount: filtered.length,
-        selectedUuid: filtered[lastIndex]?.uuid || null,
+        // Use initialSelectedUuid if provided (restoring position), otherwise default to last entry
+        selectedUuid: action.initialSelectedUuid || filtered[lastIndex]?.uuid || null,
       };
     }
 

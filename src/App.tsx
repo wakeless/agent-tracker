@@ -1,80 +1,56 @@
-import React, { useState, useEffect } from 'react';
-import { Box, Text, useInput } from 'ink';
-import { ActivityStore } from './services/ActivityStore.js';
-import { EventWatcher } from './services/EventWatcher.js';
-import { SessionList } from './components/SessionList.js';
-import { SessionDetail } from './components/SessionDetail.js';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useInput } from 'ink';
+import { SessionTrackerService } from './services/SessionTrackerService.js';
+import { useSessionTracker } from './hooks/useSessionTracker.js';
+import { SessionListView } from './components/SessionListView.js';
 import { TranscriptViewer } from './components/TranscriptViewer.js';
 import { ToolDetailView } from './components/ToolDetailView.js';
 import { EmptyState } from './components/EmptyState.js';
 import { TranscriptReader } from './services/TranscriptReader.js';
-import { actions } from './types/actions.js';
+import { useNavigation, NavStackItem } from './hooks/useNavigation.js';
 import { ParsedTranscriptEntry } from './types/transcript.js';
-
-type ViewMode = 'list' | 'transcript' | 'tool-detail';
+import { homedir } from 'os';
+import { join } from 'path';
 
 export interface AppProps {
   eventsFilePath?: string;
 }
 
 export function App({ eventsFilePath }: AppProps = {}) {
-  const [store] = useState(() => new ActivityStore({ enableLogging: false }));
-  const [watcher] = useState(() => new EventWatcher({
-    onSessionStart: (event) => store.dispatch(actions.sessionStart(event)),
-    onSessionEnd: (event) => store.dispatch(actions.sessionEnd(event)),
-    onActivity: (event) => {
-      // Dispatch specific activity action based on activity_type
-      switch (event.activity_type) {
-        case 'tool_use':
-          store.dispatch(actions.activityToolUse(event));
-          break;
-        case 'prompt_submit':
-          store.dispatch(actions.activityPromptSubmit(event));
-          break;
-        case 'stop':
-          store.dispatch(actions.activityStop(event));
-          break;
-        case 'subagent_stop':
-          store.dispatch(actions.activitySubagentStop(event));
-          break;
-        case 'notification':
-          store.dispatch(actions.activityNotification(event));
-          break;
-      }
-    },
-    onError: (error) => console.error('Event watcher error:', error),
-  }, eventsFilePath ? { logPath: eventsFilePath } : undefined));
-
-  const [sessions, setSessions] = useState(store.getSessions());
-  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>('list');
-  const [recentTranscript, setRecentTranscript] = useState<ParsedTranscriptEntry[]>([]);
-  const [selectedToolEntry, setSelectedToolEntry] = useState<ParsedTranscriptEntry | null>(null);
-  const [allTranscriptEntries, setAllTranscriptEntries] = useState<ParsedTranscriptEntry[]>([]);
-
-  // Subscribe to session changes
-  useEffect(() => {
-    const unsubscribe = store.subscribe(() => {
-      setSessions(store.getSessions());
+  // Create SessionTrackerService instance once using useRef for stability
+  // This ensures the service instance is the same across all re-renders
+  const serviceRef = useRef<SessionTrackerService | null>(null);
+  if (!serviceRef.current) {
+    // Default to ~/.agent-tracker/sessions.jsonl if not specified
+    const defaultPath = join(homedir(), '.agent-tracker', 'sessions.jsonl');
+    serviceRef.current = new SessionTrackerService({
+      eventsFilePath: eventsFilePath || defaultPath,
+      enableLogging: false,
     });
-    return unsubscribe;
-  }, [store]);
+  }
+  const service = serviceRef.current;
+
+  // Use the hook to subscribe to session updates
+  const { sessions } = useSessionTracker(service);
+
+  // Navigation stack
+  const navigation = useNavigation(sessions[0]?.id || null);
 
   // Check if events file exists - if not, show empty state
-  const eventsFileExists = watcher.fileExists();
+  const eventsFileExists = service.fileExists();
 
   // Start watching for events (only if file exists)
   useEffect(() => {
     if (eventsFileExists) {
-      watcher.start();
-      return () => watcher.stop();
+      service.start();
+      return () => service.stop();
     }
-  }, [watcher, eventsFileExists]);
+  }, [service, eventsFileExists]);
 
   // Update session activity from transcript files periodically
   useEffect(() => {
     const updateTranscriptActivity = async () => {
-      const currentSessions = store.getSessions();
+      const currentSessions = service.getSessions();
       const reader = new TranscriptReader();
 
       for (const session of currentSessions) {
@@ -84,7 +60,7 @@ export function App({ eventsFilePath }: AppProps = {}) {
         try {
           const lastTimestamp = await reader.getLastEntryTimestamp(session.transcriptPath);
           if (lastTimestamp) {
-            store.updateSessionActivityFromTranscript(session.id, lastTimestamp);
+            service.updateSessionActivityFromTranscript(session.id, lastTimestamp);
           }
         } catch (error) {
           // Transcript file might not exist or be inaccessible
@@ -100,205 +76,134 @@ export function App({ eventsFilePath }: AppProps = {}) {
     const interval = setInterval(updateTranscriptActivity, 15000);
 
     return () => clearInterval(interval);
-  }, [store]);
+  }, [service]);
 
   // Update session statuses periodically
   useEffect(() => {
     // Run immediately on mount to clean up stale sessions
-    store.updateSessionStatuses();
+    service.updateSessionStatuses();
 
     // Then run every 10 seconds
     const interval = setInterval(() => {
-      store.updateSessionStatuses();
+      service.updateSessionStatuses();
     }, 10000);
 
     return () => clearInterval(interval);
-  }, [store]);
+  }, [service]);
 
-  // Initialize or update selected session ID
-  useEffect(() => {
-    // If no selection and sessions exist, select first
-    if (!selectedSessionId && sessions.length > 0) {
-      setSelectedSessionId(sessions[0].id);
-      return;
-    }
+  // No effect needed - selection is managed by:
+  // 1. Initial navigation state (useNavigation hook)
+  // 2. User navigation (j/k/Enter in SessionListView)
+  // 3. Deleted session handling (at render time below)
 
-    // If selected session no longer exists, select first available or null
-    if (selectedSessionId && !sessions.find((s) => s.id === selectedSessionId)) {
-      setSelectedSessionId(sessions[0]?.id || null);
-    }
-  }, [sessions, selectedSessionId]);
-
-  // Load recent transcript entries for selected session
-  useEffect(() => {
-    const selectedSession = sessions.find((s) => s.id === selectedSessionId) || null;
-    if (!selectedSession) {
-      setRecentTranscript([]);
-      return;
-    }
-
-    const loadRecentTranscript = async () => {
-      try {
-        const reader = new TranscriptReader();
-        const entries = await reader.getRecentEntries(selectedSession.transcriptPath, 5);
-        setRecentTranscript(entries);
-      } catch (error) {
-        // Transcript file might not exist yet or be inaccessible
-        setRecentTranscript([]);
-      }
-    };
-
-    loadRecentTranscript();
-  }, [selectedSessionId, sessions]);
-
-  // Keyboard navigation
+  // Global keyboard navigation - only ESC (pop) and quit
+  // Component-specific navigation (j/k/Enter) is handled by each view
   useInput((input, key) => {
-    if (viewMode === 'tool-detail') {
-      // In tool detail view, ESC returns to transcript
-      if (key.escape) {
-        setViewMode('transcript');
-        setSelectedToolEntry(null);
-      } else if (input === 'q' || (key.ctrl && input === 'c')) {
-        process.exit(0);
-      }
-    } else if (viewMode === 'transcript') {
-      // In transcript view, ESC returns to list
-      // Enter is handled by TranscriptViewer to show tool details
-      if (key.escape) {
-        setViewMode('list');
-      } else if (input === 'q' || (key.ctrl && input === 'c')) {
-        process.exit(0);
-      }
-    } else {
-      // In list view
-      if (key.upArrow || input === 'k') {
-        // Navigate to previous session
-        const currentIdx = sessions.findIndex((s) => s.id === selectedSessionId);
-        if (currentIdx > 0) {
-          setSelectedSessionId(sessions[currentIdx - 1].id);
-        }
-      } else if (key.downArrow || input === 'j') {
-        // Navigate to next session
-        const currentIdx = sessions.findIndex((s) => s.id === selectedSessionId);
-        if (currentIdx >= 0 && currentIdx < sessions.length - 1) {
-          setSelectedSessionId(sessions[currentIdx + 1].id);
-        }
-      } else if (key.return && sessions.find((s) => s.id === selectedSessionId)) {
-        // Press Enter to view transcript
-        setViewMode('transcript');
-      } else if (input === 'q' || (key.ctrl && input === 'c')) {
-        process.exit(0);
-      }
+    if (key.escape && navigation.depth > 1) {
+      // Pop back one level (but not from list view)
+      navigation.pop();
+    } else if (input === 'q' || (key.ctrl && input === 'c')) {
+      process.exit(0);
     }
   });
-
-  // Derive selected session from ID
-  const selectedSession = sessions.find((s) => s.id === selectedSessionId) || null;
-  const counts = store.getSessionCounts();
-
-  // Handler for showing tool detail view
-  const handleShowToolDetail = (toolEntry: ParsedTranscriptEntry, allEntries: ParsedTranscriptEntry[]) => {
-    setSelectedToolEntry(toolEntry);
-    setAllTranscriptEntries(allEntries);
-    setViewMode('tool-detail');
-  };
 
   // If events file doesn't exist, show empty state
   if (!eventsFileExists) {
     return <EmptyState />;
   }
 
-  // Tool detail view
-  if (viewMode === 'tool-detail' && selectedToolEntry) {
-    // Find the corresponding tool_result entry
-    const toolResultEntry = allTranscriptEntries.find(
-      entry => entry.type === 'tool_result' && entry.toolUseId === selectedToolEntry.toolId
-    ) || null;
+  // Prepare data before rendering (avoid hooks in switch)
+  const currentView = navigation.currentView;
 
-    return (
-      <ToolDetailView
-        toolUseEntry={selectedToolEntry}
-        toolResultEntry={toolResultEntry}
-        onBack={() => {
-          setViewMode('transcript');
-          setSelectedToolEntry(null);
-        }}
-      />
-    );
-  }
+  // For transcript view: memoize session and callback
+  const transcriptSession = currentView.type === 'transcript'
+    ? sessions.find((s) => s.id === currentView.sessionId)
+    : null;
 
-  // Transcript view
-  if (viewMode === 'transcript' && selectedSession) {
-    return (
-      <TranscriptViewer
-        key={selectedSession.id}
-        transcriptPath={selectedSession.transcriptPath}
-        sessionId={selectedSession.id}
-        session={selectedSession}
-        onShowToolDetail={handleShowToolDetail}
-      />
-    );
-  }
-
-  // List view
-  return (
-    <Box flexDirection="column" padding={1}>
-      {/* Header */}
-      <Box marginBottom={1}>
-        <Text bold color="cyan">
-          Agent Tracker
-        </Text>
-        <Text dimColor> - Tracking Claude Code Sessions</Text>
-      </Box>
-
-      {/* Stats Bar */}
-      <Box marginBottom={1}>
-        <Box marginRight={2}>
-          <Text>Total: </Text>
-          <Text bold>{counts.total}</Text>
-        </Box>
-        {counts.awaitingInput > 0 && (
-          <Box marginRight={2}>
-            <Text color="magenta">⏳ Awaiting Input: </Text>
-            <Text bold color="magenta">{counts.awaitingInput}</Text>
-          </Box>
-        )}
-        <Box marginRight={2}>
-          <Text color="green">Active: </Text>
-          <Text bold color="green">{counts.active}</Text>
-        </Box>
-        <Box marginRight={2}>
-          <Text color="yellow">Inactive: </Text>
-          <Text bold color="yellow">{counts.inactive}</Text>
-        </Box>
-        <Box>
-          <Text color="red">Ended: </Text>
-          <Text bold color="red">{counts.ended}</Text>
-        </Box>
-      </Box>
-
-      {/* Main Content */}
-      <Box borderStyle="round" borderColor="gray">
-        {/* Left Panel - Session List */}
-        <Box flexGrow={1} borderStyle="single" borderColor="gray">
-          <SessionList
-            sessions={sessions}
-            selectedSessionId={selectedSessionId}
-          />
-        </Box>
-
-        {/* Right Panel - Session Detail */}
-        <Box flexGrow={2}>
-          <SessionDetail session={selectedSession} recentTranscript={recentTranscript} />
-        </Box>
-      </Box>
-
-      {/* Footer */}
-      <Box marginTop={1}>
-        <Text dimColor>
-          Navigation: ↑/↓ or j/k • Quit: q or Ctrl+C • Log: {watcher.getLogPath()}
-        </Text>
-      </Box>
-    </Box>
+  const stableTranscriptSession = useMemo(
+    () => transcriptSession,
+    [transcriptSession?.id, transcriptSession?.transcriptPath]
   );
+
+  const handleShowToolDetail = useCallback(
+    (toolEntry: ParsedTranscriptEntry, allEntries: ParsedTranscriptEntry[]) => {
+      if (transcriptSession) {
+        navigation.pushToolDetail(transcriptSession.id, toolEntry.uuid, allEntries);
+      }
+    },
+    [navigation, transcriptSession?.id]
+  );
+
+  // Render based on current view in navigation stack
+  switch (currentView.type) {
+    case 'list': {
+      // Handle case where selected session was deleted
+      const selectedSessionId = currentView.selectedSessionId;
+      const selectedSessionExists = selectedSessionId
+        ? sessions.some(s => s.id === selectedSessionId)
+        : false;
+
+      // If selected session doesn't exist but we have sessions, select first
+      if (!selectedSessionExists && sessions.length > 0) {
+        navigation.selectSession(sessions[0].id);
+      }
+
+      return (
+        <SessionListView
+          sessions={sessions}
+          selectedSessionId={selectedSessionExists ? selectedSessionId : (sessions[0]?.id || null)}
+          service={service}
+          onSelectSession={navigation.selectSession}
+          onViewTranscript={navigation.pushTranscript}
+        />
+      );
+    }
+
+    case 'transcript': {
+      if (!stableTranscriptSession) {
+        // Session was deleted, pop back to list
+        navigation.pop();
+        return null;
+      }
+
+      const transcriptView = currentView as Extract<NavStackItem, { type: 'transcript' }>;
+
+      return (
+        <TranscriptViewer
+          key={stableTranscriptSession.id}
+          transcriptPath={stableTranscriptSession.transcriptPath}
+          sessionId={stableTranscriptSession.id}
+          session={stableTranscriptSession}
+          onShowToolDetail={handleShowToolDetail}
+          initialSelectedUuid={transcriptView.selectedUuid}
+          onSelectionChange={navigation.updateTranscriptPosition}
+        />
+      );
+    }
+
+    case 'tool-detail': {
+      // Type assertion since we're in the tool-detail case
+      const toolDetailView = currentView as Extract<NavStackItem, { type: 'tool-detail' }>;
+      const session = sessions.find((s) => s.id === toolDetailView.sessionId);
+      const toolUseEntry = toolDetailView.allTranscriptEntries.find(
+        (e) => e.uuid === toolDetailView.toolEntryUuid
+      );
+      const toolResultEntry =
+        toolDetailView.allTranscriptEntries.find(
+          (e) => e.type === 'tool_result' && e.toolUseId === toolUseEntry?.toolId
+        ) || null;
+
+      if (!session || !toolUseEntry) {
+        // Data no longer valid, pop back
+        navigation.pop();
+        return null;
+      }
+
+      return <ToolDetailView toolUseEntry={toolUseEntry} toolResultEntry={toolResultEntry} />;
+    }
+
+    default:
+      // Should never happen due to TypeScript exhaustiveness checking
+      return null;
+  }
 }

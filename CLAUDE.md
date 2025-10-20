@@ -22,6 +22,12 @@ As an LLM agent working on this project:
      - `src/services/ActivityStore.ts` - State management
      - `src/types/session.ts` - Type definitions
 
+## Design Philosophy
+This is a critical set of design rules.
+- **ALWAYS** use single directional flow of data.
+- Rarely use `useEffect` this is prone to errors and if we are writing declaratively is unnecessary.
+- Do not over optimise. If we need to optimise with stable functions or state, comment as to why.
+
 ## Backwards Compatibility
 
 **CRITICAL**: The JSONL event format in `~/.agent-tracker/sessions.jsonl` is a public contract. Any changes MUST maintain backwards compatibility.

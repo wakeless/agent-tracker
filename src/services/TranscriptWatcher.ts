@@ -126,9 +126,11 @@ export class TranscriptWatcher {
       for (const line of lines) {
         try {
           const entry = JSON.parse(line) as TranscriptEntry;
-          const parsed = this.reader.parseEntry(entry);
-          if (parsed) {
-            newEntries.push(parsed);
+          // Note: Watcher doesn't have access to upcoming entries for look-ahead
+          // Bash merging will happen on full transcript reload
+          const result = this.reader.parseEntry(entry);
+          if (result.parsed) {
+            newEntries.push(result.parsed);
           }
         } catch (error) {
           if (this.options.onError) {

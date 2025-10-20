@@ -4,6 +4,45 @@ import { TranscriptEntry, ParsedTranscriptEntry, AssistantMessage, isSystemMessa
 
 export class TranscriptReader {
   /**
+   * Helper: Check if content contains bash-input tags
+   */
+  private isBashInput(content: string): boolean {
+    return /<bash-input>[\s\S]*?<\/bash-input>/.test(content);
+  }
+
+  /**
+   * Helper: Check if content contains bash-stdout or bash-stderr tags
+   */
+  private isBashOutput(content: string): boolean {
+    return /<bash-stdout>[\s\S]*?<\/bash-stdout>/.test(content) ||
+           /<bash-stderr>[\s\S]*?<\/bash-stderr>/.test(content);
+  }
+
+  /**
+   * Helper: Extract bash command from bash-input tags
+   */
+  private extractBashCommand(content: string): string {
+    const match = content.match(/<bash-input>([\s\S]*?)<\/bash-input>/);
+    return match ? match[1].trim() : '';
+  }
+
+  /**
+   * Helper: Extract bash stdout from bash-stdout tags
+   */
+  private extractBashStdout(content: string): string {
+    const match = content.match(/<bash-stdout>([\s\S]*?)<\/bash-stdout>/);
+    return match ? match[1].trim() : '';
+  }
+
+  /**
+   * Helper: Extract bash stderr from bash-stderr tags
+   */
+  private extractBashStderr(content: string): string {
+    const match = content.match(/<bash-stderr>([\s\S]*?)<\/bash-stderr>/);
+    return match ? match[1].trim() : '';
+  }
+
+  /**
    * Read and parse a transcript file
    */
   async readTranscript(transcriptPath: string): Promise<ParsedTranscriptEntry[]> {
@@ -12,7 +51,8 @@ export class TranscriptReader {
         throw new Error(`Transcript file not found: ${transcriptPath}`);
       }
 
-      const entries: ParsedTranscriptEntry[] = [];
+      // Pass 1: Read all raw entries
+      const rawEntries: TranscriptEntry[] = [];
       const fileStream = fs.createReadStream(transcriptPath);
       const rl = readline.createInterface({
         input: fileStream,
@@ -24,17 +64,36 @@ export class TranscriptReader {
 
         try {
           const entry: TranscriptEntry = JSON.parse(line);
-          const parsed = this.parseEntry(entry);
-          if (parsed) {
-            entries.push(parsed);
-          }
+          rawEntries.push(entry);
         } catch (err) {
           console.error('Failed to parse transcript line:', err);
           // Continue processing other lines
         }
       }
 
-      return entries;
+      // Pass 2: Parse entries with look-ahead capability
+      const parsedEntries: ParsedTranscriptEntry[] = [];
+      let skip = 0;
+
+      for (let i = 0; i < rawEntries.length; i++) {
+        // Skip if this entry was consumed by a previous merge
+        if (skip > 0) {
+          skip--;
+          continue;
+        }
+
+        const current = rawEntries[i];
+        const upcoming = rawEntries.slice(i + 1, i + 4); // Look ahead up to 3 entries
+
+        const result = this.parseEntry(current, upcoming);
+        if (result.parsed) {
+          parsedEntries.push(result.parsed);
+        }
+        // Skip the entries that were consumed in the merge
+        skip = result.consumed;
+      }
+
+      return parsedEntries;
     } catch (error) {
       if (error instanceof Error) {
         throw new Error(`Failed to read transcript: ${error.message}`);
@@ -53,8 +112,11 @@ export class TranscriptReader {
 
   /**
    * Parse a transcript entry into display format
+   * @param entry - The current entry to parse
+   * @param upcoming - Array of upcoming entries for look-ahead (up to 3 entries)
+   * @returns Object with parsed entry and number of upcoming entries consumed
    */
-  parseEntry(entry: TranscriptEntry): ParsedTranscriptEntry | null {
+  parseEntry(entry: TranscriptEntry, upcoming: TranscriptEntry[] = []): { parsed: ParsedTranscriptEntry | null; consumed: number } {
     const timestamp = new Date(entry.timestamp);
     const isSystem = isSystemMessage(entry);
 
@@ -67,12 +129,15 @@ export class TranscriptReader {
           const toolResult = toolResultBlocks[0];
           if (toolResult.type === 'tool_result') {
             return {
-              uuid: entry.uuid,
-              timestamp,
-              type: 'tool_result',
-              content: toolResult.content,
-              toolUseId: toolResult.tool_use_id,
-              isError: toolResult.is_error,
+              parsed: {
+                uuid: entry.uuid,
+                timestamp,
+                type: 'tool_result',
+                content: toolResult.content,
+                toolUseId: toolResult.tool_use_id,
+                isError: toolResult.is_error,
+              },
+              consumed: 0,
             };
           }
         }
@@ -94,26 +159,126 @@ export class TranscriptReader {
 
       // Skip entries with no meaningful content
       if (!content.trim()) {
-        return null;
+        return { parsed: null, consumed: 0 };
+      }
+
+      // Check if this is a bash-input entry and look ahead for bash-output
+      if (this.isBashInput(content)) {
+        // Look through upcoming entries to find the matching bash-output
+        for (let i = 0; i < upcoming.length; i++) {
+          const nextEntry = upcoming[i];
+
+          // Only look at user messages
+          if (nextEntry.type !== 'user' || !nextEntry.message) {
+            continue;
+          }
+
+          // Extract content from next entry
+          let nextContent: string;
+          if (typeof nextEntry.message.content === 'string') {
+            nextContent = nextEntry.message.content;
+          } else if (Array.isArray(nextEntry.message.content)) {
+            nextContent = nextEntry.message.content
+              .filter(block => block.type === 'text')
+              .map(block => block.type === 'text' ? block.text : '')
+              .join('\n\n');
+          } else {
+            continue;
+          }
+
+          // Check if this is the bash output
+          if (this.isBashOutput(nextContent)) {
+            // Merge bash input and output into a single entry
+            const command = this.extractBashCommand(content);
+            const stdout = this.extractBashStdout(nextContent);
+            const stderr = this.extractBashStderr(nextContent);
+
+            // Build combined content
+            let combinedContent = `$ ${command}`;
+
+            if (stdout) {
+              combinedContent += `\n\n${stdout}`;
+            }
+
+            if (stderr) {
+              combinedContent += `\n\n[stderr]\n${stderr}`;
+            }
+
+            return {
+              parsed: {
+                uuid: entry.uuid,
+                timestamp,
+                type: 'user',
+                content: combinedContent,
+                isSystemMessage: isSystem,
+              },
+              consumed: i + 1, // We consumed the output entry (and any entries in between)
+            };
+          }
+        }
+
+        // If we didn't find a matching output, just parse the input as-is
+        const command = this.extractBashCommand(content);
+        return {
+          parsed: {
+            uuid: entry.uuid,
+            timestamp,
+            type: 'user',
+            content: `$ ${command}`,
+            isSystemMessage: isSystem,
+          },
+          consumed: 0,
+        };
+      }
+
+      // Check if this is a bash-output entry (orphaned, without matching input)
+      if (this.isBashOutput(content)) {
+        const stdout = this.extractBashStdout(content);
+        const stderr = this.extractBashStderr(content);
+
+        let outputContent = '';
+        if (stdout) {
+          outputContent += stdout;
+        }
+        if (stderr) {
+          outputContent += (outputContent ? '\n\n' : '') + `[stderr]\n${stderr}`;
+        }
+
+        return {
+          parsed: {
+            uuid: entry.uuid,
+            timestamp,
+            type: 'user',
+            content: outputContent,
+            isSystemMessage: isSystem,
+          },
+          consumed: 0,
+        };
       }
 
       // Mark internal meta messages (like caveats) as 'meta' type
       if (entry.isMeta) {
         return {
-          uuid: entry.uuid,
-          timestamp,
-          type: 'meta',
-          content,
-          isSystemMessage: true,
+          parsed: {
+            uuid: entry.uuid,
+            timestamp,
+            type: 'meta',
+            content,
+            isSystemMessage: true,
+          },
+          consumed: 0,
         };
       }
 
       return {
-        uuid: entry.uuid,
-        timestamp,
-        type: 'user',
-        content,
-        isSystemMessage: isSystem,
+        parsed: {
+          uuid: entry.uuid,
+          timestamp,
+          type: 'user',
+          content,
+          isSystemMessage: isSystem,
+        },
+        consumed: 0,
       };
     }
 
@@ -128,11 +293,14 @@ export class TranscriptReader {
         const thinkingBlock = thinkingBlocks[0];
         if (thinkingBlock.type === 'thinking') {
           return {
-            uuid: entry.uuid,
-            timestamp,
-            type: 'thinking',
-            content: thinkingBlock.thinking,
-            isSystemMessage: true, // Thinking is always system
+            parsed: {
+              uuid: entry.uuid,
+              timestamp,
+              type: 'thinking',
+              content: thinkingBlock.thinking,
+              isSystemMessage: true, // Thinking is always system
+            },
+            consumed: 0,
           };
         }
       }
@@ -144,11 +312,14 @@ export class TranscriptReader {
 
       if (textContent) {
         return {
-          uuid: entry.uuid,
-          timestamp,
-          type: 'assistant',
-          content: textContent,
-          isSystemMessage: isSystem,
+          parsed: {
+            uuid: entry.uuid,
+            timestamp,
+            type: 'assistant',
+            content: textContent,
+            isSystemMessage: isSystem,
+          },
+          consumed: 0,
         };
       }
 
@@ -157,13 +328,16 @@ export class TranscriptReader {
         const toolBlock = toolUseBlocks[0];
         if (toolBlock.type === 'tool_use') {
           return {
-            uuid: entry.uuid,
-            timestamp,
-            type: 'tool_use',
-            content: `Used tool: ${toolBlock.name}`,
-            toolName: toolBlock.name,
-            toolId: toolBlock.id,
-            toolInput: toolBlock.input,
+            parsed: {
+              uuid: entry.uuid,
+              timestamp,
+              type: 'tool_use',
+              content: `Used tool: ${toolBlock.name}`,
+              toolName: toolBlock.name,
+              toolId: toolBlock.id,
+              toolInput: toolBlock.input,
+            },
+            consumed: 0,
           };
         }
       }
@@ -172,13 +346,16 @@ export class TranscriptReader {
     // Parse system entries (e.g., compact boundaries)
     if (entry.type === 'system') {
       return {
-        uuid: entry.uuid,
-        timestamp,
-        type: 'system',
-        content: entry.content || 'System event',
-        systemSubtype: entry.subtype,
-        compactMetadata: entry.compactMetadata,
-        isSystemMessage: true,
+        parsed: {
+          uuid: entry.uuid,
+          timestamp,
+          type: 'system',
+          content: entry.content || 'System event',
+          systemSubtype: entry.subtype,
+          compactMetadata: entry.compactMetadata,
+          isSystemMessage: true,
+        },
+        consumed: 0,
       };
     }
 
@@ -188,16 +365,19 @@ export class TranscriptReader {
         ? Object.keys(entry.snapshot.trackedFileBackups).length
         : 0;
       return {
-        uuid: entry.uuid,
-        timestamp,
-        type: 'file-history',
-        content: `File history snapshot (${fileCount} files tracked)`,
-        fileCount,
-        isSystemMessage: true,
+        parsed: {
+          uuid: entry.uuid,
+          timestamp,
+          type: 'file-history',
+          content: `File history snapshot (${fileCount} files tracked)`,
+          fileCount,
+          isSystemMessage: true,
+        },
+        consumed: 0,
       };
     }
 
-    return null;
+    return { parsed: null, consumed: 0 };
   }
 
   /**
@@ -241,24 +421,44 @@ export class TranscriptReader {
 
       const content = fs.readFileSync(transcriptPath, 'utf-8');
       const lines = content.split('\n');
-      const entries: ParsedTranscriptEntry[] = [];
 
+      // Pass 1: Parse all raw entries
+      const rawEntries: TranscriptEntry[] = [];
       for (const line of lines) {
         if (!line.trim()) continue;
 
         try {
           const entry: TranscriptEntry = JSON.parse(line);
-          const parsed = this.parseEntry(entry);
-          if (parsed) {
-            entries.push(parsed);
-          }
+          rawEntries.push(entry);
         } catch (err) {
           console.error('Failed to parse transcript line:', err);
           // Continue processing other lines
         }
       }
 
-      return entries;
+      // Pass 2: Parse entries with look-ahead capability
+      const parsedEntries: ParsedTranscriptEntry[] = [];
+      let skip = 0;
+
+      for (let i = 0; i < rawEntries.length; i++) {
+        // Skip if this entry was consumed by a previous merge
+        if (skip > 0) {
+          skip--;
+          continue;
+        }
+
+        const current = rawEntries[i];
+        const upcoming = rawEntries.slice(i + 1, i + 4); // Look ahead up to 3 entries
+
+        const result = this.parseEntry(current, upcoming);
+        if (result.parsed) {
+          parsedEntries.push(result.parsed);
+        }
+        // Skip the entries that were consumed in the merge
+        skip = result.consumed;
+      }
+
+      return parsedEntries;
     } catch (error) {
       if (error instanceof Error) {
         throw new Error(`Failed to read transcript: ${error.message}`);
