@@ -1,14 +1,14 @@
 import React from 'react';
 import { Box, Text } from 'ink';
 import { Session } from '../types/session.js';
+import { getStableColor } from '../utils/stableColors.js';
 
 interface SessionListProps {
   sessions: Session[];
-  selectedIndex: number;
-  onSelect?: (index: number) => void;
+  selectedSessionId: string | null;
 }
 
-export function SessionList({ sessions, selectedIndex }: SessionListProps) {
+export function SessionList({ sessions, selectedSessionId }: SessionListProps) {
   if (sessions.length === 0) {
     return (
       <Box flexDirection="column" padding={1}>
@@ -25,11 +25,11 @@ export function SessionList({ sessions, selectedIndex }: SessionListProps) {
           Sessions ({sessions.length})
         </Text>
       </Box>
-      {sessions.map((session, index) => (
+      {sessions.map((session) => (
         <SessionListItem
           key={session.id}
           session={session}
-          isSelected={index === selectedIndex}
+          isSelected={session.id === selectedSessionId}
         />
       ))}
     </Box>
@@ -60,13 +60,18 @@ function SessionListItem({ session, isSelected }: SessionListItemProps) {
   const dirName = session.cwd.split('/').pop() || session.cwd;
 
   // Build project identifier from git info
-  const getProjectName = (): string => {
+  const getProjectParts = (): { repoName: string; branch: string | null } => {
     if (session.git.is_repo && session.git.repo_name !== 'unknown') {
-      // For git repos, show repo/branch (e.g., "pipie/main")
-      return `${session.git.repo_name}/${session.git.branch}`;
+      return {
+        repoName: session.git.repo_name,
+        branch: session.git.branch,
+      };
     }
     // Fall back to directory name for non-git projects
-    return dirName;
+    return {
+      repoName: dirName,
+      branch: null,
+    };
   };
 
   // Format time since last activity
@@ -78,45 +83,16 @@ function SessionListItem({ session, isSelected }: SessionListItemProps) {
     isITerm && session.terminal.iterm.tab_name !== 'unknown'
       ? sanitizeDisplayText(session.terminal.iterm.tab_name)
       : null;
-  const profile =
-    isITerm && session.terminal.iterm.profile !== 'unknown'
-      ? session.terminal.iterm.profile
-      : null;
 
-  // Build display name: prefer iTerm tab name, then project name
-  const displayName = tabName || getProjectName();
+  // Get project parts for stable coloring
+  const { repoName, branch } = getProjectParts();
 
-  // Format git status indicators (worktree and dirty)
-  const formatGitStatus = (): string | null => {
-    if (!session.git.is_repo) return null;
+  // Get stable colors for repo and branch (background + foreground)
+  const repoColors = getStableColor(repoName);
+  const branchColors = branch ? getStableColor(branch) : null;
 
-    const indicators = [];
-    if (session.git.is_worktree) indicators.push('worktree');
-    if (session.git.is_dirty) indicators.push('uncommitted changes');
-
-    return indicators.length > 0 ? indicators.join(', ') : null;
-  };
-
-  const gitStatus = formatGitStatus();
-
-  // Build secondary info line
-  const terminalInfo = isITerm
-    ? 'iTerm2'
-    : session.terminal.term_program || 'Terminal';
-
-  const baseParts = [];
-  if (gitStatus) baseParts.push(gitStatus);
-  if (profile) baseParts.push(`${terminalInfo} (${profile})`);
-  else baseParts.push(terminalInfo);
-  baseParts.push(timeSince);
-
-  const secondaryInfo = baseParts.join(' • ');
-
-  // Build the full display text as a single string so Ink can properly truncate
-  const fullDisplayText =
-    tabName && tabName !== dirName
-      ? `${getStatusSymbol(session.status, session.awaitingInput)} ${displayName} (${dirName})`
-      : `${getStatusSymbol(session.status, session.awaitingInput)} ${displayName}`;
+  // Simplified secondary info: just show time since last activity
+  const secondaryInfo = timeSince;
 
   return (
     <Box width="100%">
@@ -129,14 +105,48 @@ function SessionListItem({ session, isSelected }: SessionListItemProps) {
       </Box>
       <Box flexDirection="column" flexGrow={1} minWidth={0}>
         <Box minWidth={0}>
+          {/* Status symbol */}
           <Text
+            key="status"
             bold={isSelected}
             color={isSelected ? 'cyan' : getStatusColor(session.status, session.awaitingInput)}
             dimColor={session.status !== 'active' && !session.awaitingInput}
-            wrap="truncate-end"
           >
-            {fullDisplayText}
+            {getStatusSymbol(session.status, session.awaitingInput)}{' '}
           </Text>
+
+          {/* Repo name with stable background color */}
+          <Text
+            key="repo"
+            bold={isSelected}
+            backgroundColor={isSelected ? undefined : repoColors.backgroundColor}
+            color={isSelected ? 'cyan' : repoColors.foregroundColor}
+          >
+            {isSelected ? repoName : ` ${repoName} `}
+          </Text>
+
+          {/* Branch with stable background color (if git repo) */}
+          {branch && branchColors && (
+            <React.Fragment key="branch-fragment">
+              <Text key="branch-colon" bold={isSelected} dimColor>:</Text>
+              <Text
+                key="branch-name"
+                bold={isSelected}
+                backgroundColor={isSelected ? undefined : branchColors.backgroundColor}
+                color={isSelected ? 'cyan' : branchColors.foregroundColor}
+              >
+                {isSelected ? branch : ` ${branch} `}
+              </Text>
+            </React.Fragment>
+          )}
+
+          {/* Tab name (if available) */}
+          {tabName && (
+            <React.Fragment key="tab-fragment">
+              <Text key="tab-separator" dimColor> – </Text>
+              <Text key="tab-name" dimColor>{tabName}</Text>
+            </React.Fragment>
+          )}
         </Box>
         <Box marginLeft={2} minWidth={0}>
           <Text dimColor wrap="truncate-end">

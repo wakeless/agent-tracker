@@ -22,11 +22,76 @@ As an LLM agent working on this project:
      - `src/services/ActivityStore.ts` - State management
      - `src/types/session.ts` - Type definitions
 
+## Backwards Compatibility
+
+**CRITICAL**: The JSONL event format in `~/.agent-tracker/sessions.jsonl` is a public contract. Any changes MUST maintain backwards compatibility.
+
+### Event Format Rules
+
+1. **Never remove or rename top-level fields** - Existing consumers depend on them
+2. **Never nest existing top-level fields** - Fields like `session_id`, `cwd`, `transcript_path` must remain at the top level
+3. **Always add new fields, never restructure existing ones** - Additive changes only
+4. **Preserve data types** - Don't change string to number, object to array, etc.
+
+### Hook Data Integration
+
+When integrating data from Claude hooks:
+- **DO**: Merge all hook payload fields at the top level using `jq '. + {...}'`
+- **DO**: Add enrichments (terminal, docker, git) as new top-level fields
+- **DON'T**: Wrap hook data in a nested object like `hook_data: {...}`
+- **DON'T**: Remove or restructure existing fields
+
+### Example - Correct Approach
+
+```bash
+# ✅ CORRECT: Merge hook data at top level, add enrichments
+EVENT=$(echo "$HOOK_DATA" | jq -c \
+  --arg captured_at "$TIMESTAMP" \
+  '. + {
+    event_type: "session_start",
+    terminal: {...},
+    captured_at: $captured_at
+  }')
+```
+
+Result: All hook fields remain at top level, enrichments added alongside:
+```json
+{
+  "session_id": "...",           // From hook (top level)
+  "cwd": "...",                  // From hook (top level)
+  "hook_event_name": "...",      // From hook (top level)
+  "event_type": "session_start", // Our addition (top level)
+  "terminal": {...},             // Our enrichment
+  "captured_at": "..."           // Our addition
+}
+```
+
+### Example - Incorrect Approach
+
+```bash
+# ❌ WRONG: Nesting hook data breaks backwards compatibility
+EVENT=$(jq -nc \
+  --argjson hook_data "$HOOK_DATA" \
+  '{ hook_data: $hook_data, terminal: {...} }')
+```
+
+Result: Existing code reading `event.session_id` breaks:
+```json
+{
+  "hook_data": {              // ❌ Nested - breaks existing code!
+    "session_id": "...",
+    "cwd": "..."
+  },
+  "terminal": {...}
+}
+```
+
 ## Technical Reference
 
 - **[ARCHITECTURE.md](./ARCHITECTURE.md)** - Full system architecture, design patterns, and extension points
 - **[README.md](./README.md)** - User-facing documentation and features
 - **[scripts/hooks/providers/README.md](./scripts/hooks/providers/README.md)** - Terminal provider system
+- **[MULTI-AGENT.md](./MULTI-AGENT.md)** - Tracking document for Claude Code-specific UI elements to refactor for multi-agent support
 
 ## React/Ink Guidelines
 

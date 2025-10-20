@@ -6,13 +6,18 @@ import { SessionList } from './components/SessionList.js';
 import { SessionDetail } from './components/SessionDetail.js';
 import { TranscriptViewer } from './components/TranscriptViewer.js';
 import { ToolDetailView } from './components/ToolDetailView.js';
+import { EmptyState } from './components/EmptyState.js';
 import { TranscriptReader } from './services/TranscriptReader.js';
 import { actions } from './types/actions.js';
 import { ParsedTranscriptEntry } from './types/transcript.js';
 
 type ViewMode = 'list' | 'transcript' | 'tool-detail';
 
-export function App() {
+export interface AppProps {
+  eventsFilePath?: string;
+}
+
+export function App({ eventsFilePath }: AppProps = {}) {
   const [store] = useState(() => new ActivityStore({ enableLogging: false }));
   const [watcher] = useState(() => new EventWatcher({
     onSessionStart: (event) => store.dispatch(actions.sessionStart(event)),
@@ -38,10 +43,10 @@ export function App() {
       }
     },
     onError: (error) => console.error('Event watcher error:', error),
-  }));
+  }, eventsFilePath ? { logPath: eventsFilePath } : undefined));
 
   const [sessions, setSessions] = useState(store.getSessions());
-  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>('list');
   const [recentTranscript, setRecentTranscript] = useState<ParsedTranscriptEntry[]>([]);
   const [selectedToolEntry, setSelectedToolEntry] = useState<ParsedTranscriptEntry | null>(null);
@@ -55,11 +60,16 @@ export function App() {
     return unsubscribe;
   }, [store]);
 
-  // Start watching for events
+  // Check if events file exists - if not, show empty state
+  const eventsFileExists = watcher.fileExists();
+
+  // Start watching for events (only if file exists)
   useEffect(() => {
-    watcher.start();
-    return () => watcher.stop();
-  }, [watcher]);
+    if (eventsFileExists) {
+      watcher.start();
+      return () => watcher.stop();
+    }
+  }, [watcher, eventsFileExists]);
 
   // Update session activity from transcript files periodically
   useEffect(() => {
@@ -94,16 +104,34 @@ export function App() {
 
   // Update session statuses periodically
   useEffect(() => {
+    // Run immediately on mount to clean up stale sessions
+    store.updateSessionStatuses();
+
+    // Then run every 10 seconds
     const interval = setInterval(() => {
       store.updateSessionStatuses();
-    }, 10000); // Every 10 seconds
+    }, 10000);
 
     return () => clearInterval(interval);
   }, [store]);
 
+  // Initialize or update selected session ID
+  useEffect(() => {
+    // If no selection and sessions exist, select first
+    if (!selectedSessionId && sessions.length > 0) {
+      setSelectedSessionId(sessions[0].id);
+      return;
+    }
+
+    // If selected session no longer exists, select first available or null
+    if (selectedSessionId && !sessions.find((s) => s.id === selectedSessionId)) {
+      setSelectedSessionId(sessions[0]?.id || null);
+    }
+  }, [sessions, selectedSessionId]);
+
   // Load recent transcript entries for selected session
   useEffect(() => {
-    const selectedSession = sessions[selectedIndex] || null;
+    const selectedSession = sessions.find((s) => s.id === selectedSessionId) || null;
     if (!selectedSession) {
       setRecentTranscript([]);
       return;
@@ -121,7 +149,7 @@ export function App() {
     };
 
     loadRecentTranscript();
-  }, [selectedIndex, sessions]);
+  }, [selectedSessionId, sessions]);
 
   // Keyboard navigation
   useInput((input, key) => {
@@ -144,10 +172,18 @@ export function App() {
     } else {
       // In list view
       if (key.upArrow || input === 'k') {
-        setSelectedIndex((prev) => Math.max(0, prev - 1));
+        // Navigate to previous session
+        const currentIdx = sessions.findIndex((s) => s.id === selectedSessionId);
+        if (currentIdx > 0) {
+          setSelectedSessionId(sessions[currentIdx - 1].id);
+        }
       } else if (key.downArrow || input === 'j') {
-        setSelectedIndex((prev) => Math.min(sessions.length - 1, prev + 1));
-      } else if (key.return && selectedSession) {
+        // Navigate to next session
+        const currentIdx = sessions.findIndex((s) => s.id === selectedSessionId);
+        if (currentIdx >= 0 && currentIdx < sessions.length - 1) {
+          setSelectedSessionId(sessions[currentIdx + 1].id);
+        }
+      } else if (key.return && sessions.find((s) => s.id === selectedSessionId)) {
         // Press Enter to view transcript
         setViewMode('transcript');
       } else if (input === 'q' || (key.ctrl && input === 'c')) {
@@ -156,14 +192,8 @@ export function App() {
     }
   });
 
-  // Keep selected index in bounds
-  useEffect(() => {
-    if (selectedIndex >= sessions.length && sessions.length > 0) {
-      setSelectedIndex(sessions.length - 1);
-    }
-  }, [sessions.length, selectedIndex]);
-
-  const selectedSession = sessions[selectedIndex] || null;
+  // Derive selected session from ID
+  const selectedSession = sessions.find((s) => s.id === selectedSessionId) || null;
   const counts = store.getSessionCounts();
 
   // Handler for showing tool detail view
@@ -172,6 +202,11 @@ export function App() {
     setAllTranscriptEntries(allEntries);
     setViewMode('tool-detail');
   };
+
+  // If events file doesn't exist, show empty state
+  if (!eventsFileExists) {
+    return <EmptyState />;
+  }
 
   // Tool detail view
   if (viewMode === 'tool-detail' && selectedToolEntry) {
@@ -244,15 +279,15 @@ export function App() {
       {/* Main Content */}
       <Box borderStyle="round" borderColor="gray">
         {/* Left Panel - Session List */}
-        <Box width="50%" borderStyle="single" borderColor="gray">
+        <Box flexGrow={1} borderStyle="single" borderColor="gray">
           <SessionList
             sessions={sessions}
-            selectedIndex={selectedIndex}
+            selectedSessionId={selectedSessionId}
           />
         </Box>
 
         {/* Right Panel - Session Detail */}
-        <Box width="50%">
+        <Box flexGrow={2}>
           <SessionDetail session={selectedSession} recentTranscript={recentTranscript} />
         </Box>
       </Box>

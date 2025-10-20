@@ -95,6 +95,28 @@ npm run dev
 npm start
 ```
 
+### Command-Line Options
+
+You can specify a custom events file path for testing or multiple instances:
+
+```bash
+# Use default events file (~/.agent-tracker/sessions.jsonl)
+agent-tracker
+
+# Use a custom events file
+agent-tracker --events-file /tmp/test-sessions.jsonl
+# or short form:
+agent-tracker -e /tmp/test-sessions.jsonl
+
+# Show help
+agent-tracker --help
+```
+
+**Use cases for custom events files:**
+- Testing the empty state without deleting your real sessions
+- Running multiple independent Agent Tracker instances
+- Isolating test sessions from production tracking
+
 ### Test with Demo Repository
 
 ```bash

@@ -3,6 +3,11 @@ import { homedir } from 'os';
 import { join } from 'path';
 import { EventHandler, SessionEvent } from '../types/events.js';
 
+export interface EventWatcherOptions {
+  logDir?: string;
+  logPath?: string;
+}
+
 export class EventWatcher {
   private logPath: string;
   private handler: EventHandler;
@@ -10,9 +15,22 @@ export class EventWatcher {
   private lastPosition = 0;
   private isReading = false;
 
-  constructor(handler: EventHandler, logDir?: string) {
-    const baseDir = logDir || join(homedir(), '.agent-tracker');
-    this.logPath = join(baseDir, 'sessions.jsonl');
+  constructor(handler: EventHandler, options?: string | EventWatcherOptions) {
+    // Support both old API (string) and new API (options object)
+    if (typeof options === 'string') {
+      // Legacy: logDir as string
+      this.logPath = join(options, 'sessions.jsonl');
+    } else if (options?.logPath) {
+      // New: full path to events file
+      this.logPath = options.logPath;
+    } else if (options?.logDir) {
+      // New: directory path
+      this.logPath = join(options.logDir, 'sessions.jsonl');
+    } else {
+      // Default: ~/.agent-tracker/sessions.jsonl
+      const baseDir = join(homedir(), '.agent-tracker');
+      this.logPath = join(baseDir, 'sessions.jsonl');
+    }
     this.handler = handler;
   }
 
@@ -133,5 +151,12 @@ export class EventWatcher {
    */
   getLogPath(): string {
     return this.logPath;
+  }
+
+  /**
+   * Check if the log file exists
+   */
+  fileExists(): boolean {
+    return fs.existsSync(this.logPath);
   }
 }

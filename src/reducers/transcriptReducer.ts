@@ -3,7 +3,6 @@ import { filterUserConversation } from '../utils/transcriptFilters.js';
 
 export interface TranscriptState {
   entries: ParsedTranscriptEntry[];
-  selectedIndex: number;
   seenFilteredCount: number;
   showSystemEntries: boolean;
   selectedUuid: string | null;
@@ -58,7 +57,6 @@ function findIndexByUuid(
 
 export const initialState: TranscriptState = {
   entries: [],
-  selectedIndex: 0,
   seenFilteredCount: 0,
   showSystemEntries: false,
   selectedUuid: null,
@@ -77,7 +75,6 @@ export function transcriptReducer(
         ...state,
         entries: action.entries,
         seenFilteredCount: filtered.length,
-        selectedIndex: lastIndex,
         selectedUuid: filtered[lastIndex]?.uuid || null,
       };
     }
@@ -85,7 +82,7 @@ export function transcriptReducer(
     case 'APPEND_ENTRIES': {
       const newEntries = [...state.entries, ...action.entries];
       // Don't change seenFilteredCount - new entries stay hidden
-      // Don't change selectedIndex - user stays at current position
+      // Don't change selectedUuid - user stays at current position
 
       return {
         ...state,
@@ -96,47 +93,37 @@ export function transcriptReducer(
     case 'TOGGLE_SYSTEM_ENTRIES': {
       const newShowSystem = !state.showSystemEntries;
 
-      // Get currently selected entry to preserve position
-      const currentVisible = getVisibleEntries(
-        state.entries,
-        state.seenFilteredCount,
-        state.showSystemEntries
-      );
-      const currentUuid = currentVisible[state.selectedIndex]?.uuid || state.selectedUuid;
-
       // Calculate new filtered count
       const newFiltered = filterEntries(state.entries, newShowSystem);
       const newSeenCount = newFiltered.length;
 
-      // Find the same entry in the new filtered list
-      const newIndex = findIndexByUuid(state.entries, currentUuid, newShowSystem);
-
+      // Keep the same selectedUuid - it will be preserved across filter changes
       return {
         ...state,
         showSystemEntries: newShowSystem,
         seenFilteredCount: newSeenCount,
-        selectedIndex: Math.min(newIndex, newSeenCount - 1),
-        selectedUuid: currentUuid,
+        selectedUuid: state.selectedUuid,
       };
     }
 
     case 'NAVIGATE_UP': {
-      const newIndex = Math.max(0, state.selectedIndex - 1);
-
-      // No change - return existing state to avoid flicker
-      if (newIndex === state.selectedIndex) {
-        return state;
-      }
-
       const visible = getVisibleEntries(
         state.entries,
         state.seenFilteredCount,
         state.showSystemEntries
       );
 
+      // Find current index from UUID
+      const currentIndex = visible.findIndex((e) => e.uuid === state.selectedUuid);
+      const newIndex = Math.max(0, currentIndex - 1);
+
+      // No change - return existing state to avoid flicker
+      if (newIndex === currentIndex || currentIndex < 0) {
+        return state;
+      }
+
       return {
         ...state,
-        selectedIndex: newIndex,
         selectedUuid: visible[newIndex]?.uuid || state.selectedUuid,
       };
     }
@@ -148,33 +135,33 @@ export function transcriptReducer(
         state.seenFilteredCount,
         state.showSystemEntries
       );
-      const currentVisible = visible.length;
-      const atBottom = state.selectedIndex === currentVisible - 1;
+
+      // Find current index from UUID
+      const currentIndex = visible.findIndex((e) => e.uuid === state.selectedUuid);
+      const atBottom = currentIndex === visible.length - 1;
       const hasHiddenEntries = filtered.length > state.seenFilteredCount;
 
       if (atBottom && hasHiddenEntries) {
         // At bottom with hidden entries - reveal them and advance
         const newSeenCount = filtered.length;
-        const newIndex = state.selectedIndex + 1;
+        const newIndex = currentIndex + 1;
 
         return {
           ...state,
           seenFilteredCount: newSeenCount,
-          selectedIndex: newIndex,
           selectedUuid: filtered[newIndex]?.uuid || state.selectedUuid,
         };
       } else {
         // Normal navigation within visible entries
-        const newIndex = Math.min(currentVisible - 1, state.selectedIndex + 1);
+        const newIndex = Math.min(visible.length - 1, currentIndex + 1);
 
         // No change - return existing state to avoid flicker
-        if (newIndex === state.selectedIndex) {
+        if (newIndex === currentIndex || currentIndex < 0) {
           return state;
         }
 
         return {
           ...state,
-          selectedIndex: newIndex,
           selectedUuid: visible[newIndex]?.uuid || state.selectedUuid,
         };
       }
@@ -183,10 +170,11 @@ export function transcriptReducer(
     case 'JUMP_TO_LATEST': {
       const filtered = filterEntries(state.entries, state.showSystemEntries);
       const lastIndex = Math.max(0, filtered.length - 1);
+      const lastUuid = filtered[lastIndex]?.uuid;
 
       // Already at latest with all visible - return existing state to avoid flicker
       if (
-        state.selectedIndex === lastIndex &&
+        state.selectedUuid === lastUuid &&
         state.seenFilteredCount === filtered.length
       ) {
         return state;
@@ -195,8 +183,7 @@ export function transcriptReducer(
       return {
         ...state,
         seenFilteredCount: filtered.length,
-        selectedIndex: lastIndex,
-        selectedUuid: filtered[lastIndex]?.uuid || state.selectedUuid,
+        selectedUuid: lastUuid || state.selectedUuid,
       };
     }
 

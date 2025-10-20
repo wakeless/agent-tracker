@@ -29,7 +29,7 @@ export function SessionDetail({ session, recentTranscript = [] }: SessionDetailP
 
       <Box marginBottom={1}>
         <Text bold>Status: </Text>
-        <StatusBadge status={session.status} />
+        <StatusBadge status={session.status} awaitingInput={session.awaitingInput} />
       </Box>
 
       <TerminalBreadcrumb session={session} />
@@ -38,7 +38,7 @@ export function SessionDetail({ session, recentTranscript = [] }: SessionDetailP
       {session.git.is_repo && session.git.repo_name !== 'unknown' && (
         <DetailRow
           label="Project"
-          value={`${session.git.repo_name}/${session.git.branch}`}
+          value={`${session.git.repo_name}:${session.git.branch}`}
         />
       )}
 
@@ -83,7 +83,7 @@ export function SessionDetail({ session, recentTranscript = [] }: SessionDetailP
             <Text bold underline>Recent Conversation</Text>
           </Box>
           {getRecentConversation(recentTranscript, 5).map((entry, index) => {
-            const maxLength = 60;
+            const maxLength = 80;
             const truncatedContent = entry.content.length > maxLength
               ? entry.content.substring(0, maxLength) + '...'
               : entry.content;
@@ -92,15 +92,12 @@ export function SessionDetail({ session, recentTranscript = [] }: SessionDetailP
             const typeLabel = entry.type === 'user' ? 'User' : entry.type === 'tool_use' ? entry.toolName || 'Tool' : 'Assistant';
 
             return (
-              <Box key={entry.uuid} flexDirection="column" marginBottom={index === 4 ? 0 : 1}>
-                <Box>
-                  <Text dimColor>{formatActivityTime(entry.timestamp)}</Text>
-                  <Text> </Text>
-                  <Text bold color={typeColor}>[{typeLabel}]</Text>
-                </Box>
-                <Box marginLeft={2}>
-                  <Text>{truncatedContent}</Text>
-                </Box>
+              <Box key={entry.uuid} minWidth={0}>
+                <Text dimColor>{formatActivityTime(entry.timestamp)}</Text>
+                <Text> </Text>
+                <Text bold color={typeColor}>[{typeLabel}]</Text>
+                <Text> </Text>
+                <Text wrap="truncate-end">{truncatedContent}</Text>
               </Box>
             );
           })}
@@ -137,16 +134,19 @@ function DetailRow({ label, value }: DetailRowProps) {
 
 interface StatusBadgeProps {
   status: Session['status'];
+  awaitingInput: boolean;
 }
 
-function StatusBadge({ status }: StatusBadgeProps) {
+function StatusBadge({ status, awaitingInput }: StatusBadgeProps) {
   const getColor = () => {
+    if (awaitingInput) return 'magenta';
     if (status === 'active') return 'green';
     if (status === 'inactive') return 'yellow';
     return 'red';
   };
 
   const getSymbol = () => {
+    if (awaitingInput) return '⏳ Awaiting Input';
     if (status === 'active') return '● Active';
     if (status === 'inactive') return '○ Inactive';
     return '✕ Ended';

@@ -7,8 +7,14 @@ set -euo pipefail
 # Get the directory where this script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# Debug log to verify hook is being called
+echo "[$(date)] SessionEnd hook called" >> "$HOME/.agent-tracker/debug.log" 2>&1 || true
+
 # Read hook data from stdin
 HOOK_DATA=$(cat)
+
+# Debug: Log the raw hook data
+echo "[$(date)] SessionEnd raw data: $HOOK_DATA" >> "$HOME/.agent-tracker/hook-data-debug.log" 2>&1 || true
 
 # Extract data from hook input
 SESSION_ID=$(echo "$HOOK_DATA" | jq -r '.session_id // "unknown"')
@@ -84,12 +90,10 @@ TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 LOG_DIR="${HOME}/.agent-tracker"
 mkdir -p "$LOG_DIR"
 
-# Create event object (compact single-line JSON)
-EVENT=$(jq -nc \
-  --arg event_type "session_end" \
-  --arg session_id "$SESSION_ID" \
-  --arg cwd "$CWD" \
-  --arg transcript_path "$TRANSCRIPT_PATH" \
+# Merge complete hook payload with our enrichments (all at top level)
+# Also preserve complete hook payload in hook_data field for forward compatibility
+EVENT=$(echo "$HOOK_DATA" | jq -c \
+  --argjson hook_payload "$(echo "$HOOK_DATA")" \
   --arg tty "$TTY" \
   --arg term "$TERM_VAR" \
   --arg shell "$SHELL_VAR" \
@@ -110,12 +114,10 @@ EVENT=$(jq -nc \
   --argjson git_is_worktree "$GIT_IS_WORKTREE" \
   --argjson git_is_dirty "$GIT_IS_DIRTY" \
   --arg git_repo_name "$GIT_REPO_NAME" \
-  --arg timestamp "$TIMESTAMP" \
-  '{
-    event_type: $event_type,
-    session_id: $session_id,
-    cwd: $cwd,
-    transcript_path: $transcript_path,
+  --arg captured_at "$TIMESTAMP" \
+  '. + {
+    event_type: "session_end",
+    hook_data: $hook_payload,
     terminal: {
       tty: $tty,
       term: $term,
@@ -144,7 +146,7 @@ EVENT=$(jq -nc \
       is_dirty: $git_is_dirty,
       repo_name: $git_repo_name
     },
-    timestamp: $timestamp
+    captured_at: $captured_at
   }')
 
 # Append to JSONL file

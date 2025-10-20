@@ -4,6 +4,7 @@ import { TranscriptReader } from '../services/TranscriptReader.js';
 import { TranscriptWatcher } from '../services/TranscriptWatcher.js';
 import { ParsedTranscriptEntry } from '../types/transcript.js';
 import { MarkdownText } from './MarkdownText.js';
+import { ToolDisplay } from './tools/index.js';
 import {
   transcriptReducer,
   initialState,
@@ -101,8 +102,7 @@ export function TranscriptViewer({ transcriptPath, sessionId, onShowToolDetail }
     }
     // Show tool detail view on Enter (if on a tool_use entry)
     else if (key.return && onShowToolDetail) {
-      const boundedIndex = Math.min(state.selectedIndex, Math.max(0, visibleEntries.length - 1));
-      const currentEntry = visibleEntries[boundedIndex];
+      const currentEntry = visibleEntries.find((e) => e.uuid === state.selectedUuid);
       if (currentEntry && currentEntry.type === 'tool_use') {
         // Pass all entries (not just visible) so we can find the tool_result
         onShowToolDetail(currentEntry, state.entries);
@@ -140,7 +140,9 @@ export function TranscriptViewer({ transcriptPath, sessionId, onShowToolDetail }
     );
   }
 
-  const boundedSelectedIndex = Math.min(state.selectedIndex, Math.max(0, visibleEntries.length - 1));
+  // Find selected index from UUID for display purposes
+  const selectedIndex = visibleEntries.findIndex((e) => e.uuid === state.selectedUuid);
+  const boundedSelectedIndex = selectedIndex >= 0 ? selectedIndex : 0;
 
   return (
     <Box flexDirection="column" padding={1}>
@@ -164,7 +166,7 @@ export function TranscriptViewer({ transcriptPath, sessionId, onShowToolDetail }
         ) : (
           <>
             {visibleEntries.map((entry, index) => {
-              const isSelected = index === boundedSelectedIndex;
+              const isSelected = entry.uuid === state.selectedUuid;
               // Only expand the selected entry
               const isExpanded = isSelected;
 
@@ -297,21 +299,19 @@ function TranscriptEntryView({
 
       {/* Content */}
       <Box marginLeft={2} flexDirection="column">
-        {/* Render markdown for expanded user/assistant entries, plain text for others */}
-        {isExpanded && (entry.type === 'user' || entry.type === 'assistant') ? (
+        {/* Tool use - use ToolDisplay component */}
+        {entry.type === 'tool_use' && entry.toolInput && entry.toolName && entry.toolId ? (
+          <ToolDisplay
+            toolName={entry.toolName}
+            toolInput={entry.toolInput}
+            toolId={entry.toolId}
+            mode={isExpanded ? 'expanded' : 'collapsed'}
+          />
+        ) : /* Render markdown for expanded user/assistant entries, plain text for others */
+        isExpanded && (entry.type === 'user' || entry.type === 'assistant') ? (
           <MarkdownText>{displayContent}</MarkdownText>
         ) : (
           <Text>{displayContent}</Text>
-        )}
-
-        {/* Tool input details (if expanded) */}
-        {isExpanded && entry.type === 'tool_use' && entry.toolInput && (
-          <Box flexDirection="column" marginTop={1}>
-            <Text dimColor>Input:</Text>
-            <Box marginLeft={2}>
-              <Text dimColor>{JSON.stringify(entry.toolInput, null, 2)}</Text>
-            </Box>
-          </Box>
         )}
 
         {/* System metadata (if expanded) */}
