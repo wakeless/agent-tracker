@@ -21,6 +21,9 @@
     "test:watch": "vitest --watch",
     "test:ui": "vitest --ui",
     "demo:session": "./scripts/test-session.sh",
+    "docs:dev": "cd website && npm start",
+    "docs:build": "cd website && npm run build",
+    "docs:serve": "cd website && npm run serve",
     "prepublishOnly": "npm run build"
   },
   "keywords": [

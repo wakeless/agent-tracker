@@ -16,6 +16,10 @@ A CLI TUI tool for tracking active Claude Code sessions. Never lose track of you
 - **Session Details**: View working directory, terminal info, timestamps, and session metadata
 - **Keyboard Navigation**: Vim-style navigation (j/k or arrow keys)
 
+## Documentation
+
+📚 **[Full Documentation](https://wakeless.github.io/agent-tracker/)** - Visit our documentation site for detailed guides and tutorials.
+
 ## Problem
 
 Have you ever lost track of Claude Code windows? They get left in tabs, suspended with Ctrl+Z, or hidden in background terminals. Agent Tracker solves this by giving you a live dashboard of all your Claude sessions.
