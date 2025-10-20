@@ -1,0 +1,135 @@
+/**
+ * SessionTrackerService
+ *
+ * Standalone service that combines EventWatcher + ActivityStore into a single,
+ * React-agnostic library. Can be instantiated independently for testing or use
+ * in any context (CLI, web, etc.).
+ *
+ * This service manages:
+ * - Watching for session events from the JSONL file
+ * - Processing events and updating session state
+ * - Notifying subscribers of state changes
+ * - Providing access to session data
+ */
+import { ActivityStore } from './ActivityStore.js';
+import { EventWatcher } from './EventWatcher.js';
+import { actions } from '../types/actions.js';
+/**
+ * SessionTrackerService
+ *
+ * Main service class that encapsulates event watching and state management.
+ * Designed to be used as a singleton or instantiated as needed.
+ */
+export class SessionTrackerService {
+    store;
+    watcher;
+    started = false;
+    constructor(options) {
+        // Initialize the activity store with optional configuration
+        this.store = new ActivityStore({
+            enableLogging: options.enableLogging ?? false,
+            inactiveThresholdMs: options.inactiveThresholdMs,
+            removeEndedSessionsMs: options.removeEndedSessionsMs,
+        });
+        // Initialize the event watcher with event handlers that dispatch to store
+        this.watcher = new EventWatcher({
+            onSessionStart: (event) => {
+                this.store.dispatch(actions.sessionStart(event));
+            },
+            onSessionEnd: (event) => {
+                this.store.dispatch(actions.sessionEnd(event));
+            },
+            onActivity: (event) => {
+                // Dispatch specific activity action based on activity_type
+                switch (event.activity_type) {
+                    case 'tool_use':
+                        this.store.dispatch(actions.activityToolUse(event));
+                        break;
+                    case 'prompt_submit':
+                        this.store.dispatch(actions.activityPromptSubmit(event));
+                        break;
+                    case 'stop':
+                        this.store.dispatch(actions.activityStop(event));
+                        break;
+                    case 'subagent_stop':
+                        this.store.dispatch(actions.activitySubagentStop(event));
+                        break;
+                    case 'notification':
+                        this.store.dispatch(actions.activityNotification(event));
+                        break;
+                }
+            },
+            onError: (error) => {
+                console.error('SessionTrackerService: EventWatcher error:', error);
+            },
+        }, { logPath: options.eventsFilePath });
+    }
+    /**
+     * Start watching for events
+     * Idempotent - safe to call multiple times
+     */
+    start() {
+        if (this.started) {
+            return;
+        }
+        this.watcher.start();
+        this.started = true;
+    }
+    /**
+     * Stop watching for events
+     * Idempotent - safe to call multiple times
+     */
+    stop() {
+        if (!this.started) {
+            return;
+        }
+        this.watcher.stop();
+        this.started = false;
+    }
+    /**
+     * Check if the events file exists
+     */
+    fileExists() {
+        return this.watcher.fileExists();
+    }
+    /**
+     * Get all sessions, sorted by activity (most recent first)
+     */
+    getSessions() {
+        return this.store.getSessions();
+    }
+    /**
+     * Get session counts by status
+     */
+    getSessionCounts() {
+        return this.store.getSessionCounts();
+    }
+    /**
+     * Subscribe to state changes
+     * Returns unsubscribe function
+     */
+    subscribe(listener) {
+        return this.store.subscribe(listener);
+    }
+    /**
+     * Manually trigger session status updates
+     * Useful for periodic checks of session activity
+     */
+    updateSessionStatuses() {
+        this.store.updateSessionStatuses();
+    }
+    /**
+     * Update a session's activity time from its transcript
+     * Used to keep session activity current based on transcript file timestamps
+     */
+    updateSessionActivityFromTranscript(sessionId, timestamp) {
+        this.store.updateSessionActivityFromTranscript(sessionId, timestamp);
+    }
+    /**
+     * Check if the service is currently watching for events
+     */
+    isStarted() {
+        return this.started;
+    }
+}
+//# sourceMappingURL=SessionTrackerService.js.map

@@ -1,0 +1,1 @@
+{"version":3,"file":"ToolDetailView.d.ts","sourceRoot":"","sources":["../../src/components/ToolDetailView.tsx"],"names":[],"mappings":"AAAA,OAAO,KAAK,MAAM,OAAO,CAAC;AAE1B,OAAO,EAAE,qBAAqB,EAAE,MAAM,wBAAwB,CAAC;AAG/D,UAAU,mBAAmB;IAC3B,YAAY,EAAE,qBAAqB,CAAC;IACpC,eAAe,EAAE,qBAAqB,GAAG,IAAI,CAAC;CAC/C;AAED,wBAAgB,cAAc,CAAC,EAAE,YAAY,EAAE,eAAe,EAAE,EAAE,mBAAmB,qBA2EpF"}
