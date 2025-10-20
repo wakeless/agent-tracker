@@ -5,5 +5,11 @@
   "author": {
     "name": "Agent Tracker Team"
   },
-  "hooks": "./.claude-plugin/hooks/hooks.json"
+  "hooks": "./.claude-plugin/hooks/hooks.json",
+  "mcpServers": {
+    "agent-tracker": {
+      "command": "node",
+      "args": ["${CLAUDE_PLUGIN_ROOT}/mcp/dist/index.js"]
+    }
+  }
 }

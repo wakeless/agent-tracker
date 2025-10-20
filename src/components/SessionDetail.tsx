@@ -45,6 +45,14 @@ export function SessionDetail({ session, recentTranscript = [] }: SessionDetailP
       <DetailRow label="Session ID" value={session.id} />
       <DetailRow label="Working Directory" value={session.cwd} />
 
+      {/* Work Summary */}
+      {session.workSummary && (
+        <Box marginTop={1}>
+          <Text bold>Current Work: </Text>
+          <Text italic color="magenta">{session.workSummary}</Text>
+        </Box>
+      )}
+
       {/* Git Information */}
       {session.git.is_repo && (
         <React.Fragment>

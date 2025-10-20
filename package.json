@@ -22,7 +22,8 @@
   },
   "scripts": {
     "dev": "tsx src/cli.tsx",
-    "build": "tsc",
+    "build": "tsc && npm run build:mcp",
+    "build:mcp": "cd mcp && tsc",
     "start": "node dist/cli.js",
     "test": "vitest",
     "test:watch": "vitest --watch",
@@ -64,6 +65,7 @@
     "vitest": "^3.2.4"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.20.1",
     "ink": "^6.3.1",
     "ink-markdown": "^1.0.4",
     "marked": "^15.0.12",

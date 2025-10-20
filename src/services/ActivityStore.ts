@@ -247,6 +247,25 @@ export function activityReducer(state: ActivityState, action: Action): ActivityS
       return changed ? { ...state, sessions: newSessions } : state;
     }
 
+    case 'UPDATE_WORK_SUMMARY': {
+      const { sessionId, summary } = action.payload;
+      const session = state.sessions.get(sessionId);
+
+      if (!session || session.status === 'ended') return state;
+
+      const newSessions = new Map(state.sessions);
+      newSessions.set(sessionId, {
+        ...session,
+        workSummary: summary,
+        lastActivityTime: new Date(), // Update activity time when work summary changes
+      });
+
+      return {
+        ...state,
+        sessions: newSessions,
+      };
+    }
+
     default:
       return state;
   }

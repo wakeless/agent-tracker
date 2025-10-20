@@ -19,6 +19,7 @@ interface HookInput {
   hook_event_name: string;
   tool_name?: string;
   message?: string;
+  tool_input?: Record<string, unknown>; // Tool parameters from PostToolUse
   [key: string]: unknown;
 }
 
@@ -28,6 +29,7 @@ interface ActivityEvent {
   session_id: string;
   timestamp: string;
   tool_name?: string;
+  tool_input?: Record<string, unknown>; // Include tool parameters
   notification_message?: string;
   hook_event_name: string;
 }
@@ -80,6 +82,11 @@ export function handleActivity(hookInput: HookInput): ActivityEvent | null {
   // Add tool name for tool_use events
   if (activityType === 'tool_use' && hookInput.tool_name) {
     event.tool_name = hookInput.tool_name;
+
+    // Include tool parameters if available
+    if (hookInput.tool_input) {
+      event.tool_input = hookInput.tool_input;
+    }
   }
 
   // Add notification message for notification events

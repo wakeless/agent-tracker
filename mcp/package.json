@@ -1,0 +1,16 @@
+{
+  "name": "@agent-tracker/mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server for Agent Tracker work summaries",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "agent-tracker-mcp": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc"
+  },
+  "keywords": ["mcp", "agent-tracker", "claude"],
+  "author": "Agent Tracker Team",
+  "license": "MIT"
+}

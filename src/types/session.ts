@@ -22,6 +22,9 @@ export interface Session {
 
   // Display metadata
   displayName?: string;
+
+  // Work tracking
+  workSummary?: string;
 }
 
 export interface SessionSnapshot {

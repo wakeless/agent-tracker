@@ -12,6 +12,7 @@ export interface ActivityEvent {
   session_id: string;
   timestamp: string;
   tool_name?: string; // Present for tool_use events
+  tool_input?: Record<string, unknown>; // Tool parameters for tool_use events
   notification_message?: string; // Present for notification events
   hook_event_name?: string; // Original hook name for debugging
 }
@@ -27,7 +28,8 @@ export type ActionType =
   | 'ACTIVITY_STOP'
   | 'ACTIVITY_SUBAGENT_STOP'
   | 'ACTIVITY_NOTIFICATION'
-  | 'UPDATE_SESSION_STATUSES';
+  | 'UPDATE_SESSION_STATUSES'
+  | 'UPDATE_WORK_SUMMARY';
 
 /**
  * Action Interfaces
@@ -76,6 +78,14 @@ export interface UpdateSessionStatusesAction {
   };
 }
 
+export interface UpdateWorkSummaryAction {
+  type: 'UPDATE_WORK_SUMMARY';
+  payload: {
+    sessionId: string;
+    summary: string;
+  };
+}
+
 /**
  * Discriminated Union of All Actions
  */
@@ -87,7 +97,8 @@ export type Action =
   | ActivityStopAction
   | ActivitySubagentStopAction
   | ActivityNotificationAction
-  | UpdateSessionStatusesAction;
+  | UpdateSessionStatusesAction
+  | UpdateWorkSummaryAction;
 
 /**
  * Action Creators
@@ -135,5 +146,10 @@ export const actions = {
   ): UpdateSessionStatusesAction => ({
     type: 'UPDATE_SESSION_STATUSES',
     payload: { currentTime, inactiveThresholdMs, removeEndedSessionsMs },
+  }),
+
+  updateWorkSummary: (sessionId: string, summary: string): UpdateWorkSummaryAction => ({
+    type: 'UPDATE_WORK_SUMMARY',
+    payload: { sessionId, summary },
   }),
 };

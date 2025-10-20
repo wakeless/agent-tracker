@@ -84,6 +84,7 @@ export interface ActivityEvent {
   session_id: string;
   timestamp: string;
   tool_name?: string; // Present for tool_use events
+  tool_input?: Record<string, unknown>; // Tool parameters for tool_use events
   notification_message?: string; // Present for notification events (permission requests, idle state)
   hook_event_name?: string; // Original hook name for debugging
 }

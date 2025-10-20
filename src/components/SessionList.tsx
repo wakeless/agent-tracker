@@ -91,9 +91,6 @@ function SessionListItem({ session, isSelected }: SessionListItemProps) {
   const repoColors = getStableColor(repoName);
   const branchColors = branch ? getStableColor(branch) : null;
 
-  // Simplified secondary info: just show time since last activity
-  const secondaryInfo = timeSince;
-
   return (
     <Box width="100%">
       <Box width={2} flexShrink={0}>
@@ -145,9 +142,20 @@ function SessionListItem({ session, isSelected }: SessionListItemProps) {
             </>
           )}
         </Box>
+
+        {/* Work summary (if available) */}
+        {session.workSummary && (
+          <Box marginLeft={2} minWidth={0}>
+            <Text dimColor italic wrap="truncate-end">
+              {session.workSummary}
+            </Text>
+          </Box>
+        )}
+
+        {/* Time since last activity */}
         <Box marginLeft={2} minWidth={0}>
           <Text dimColor wrap="truncate-end">
-            {secondaryInfo}
+            {timeSince}
           </Text>
         </Box>
       </Box>
