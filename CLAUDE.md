@@ -274,10 +274,23 @@ Check that events are being written correctly:
 
 ```bash
 # Count event types
-cat ~/.agent-tracker/sessions.jsonl | jq -r '.event_type' | sort | uniq -c
+cat ~/.agent-tracker/sessions.jsonl | node -e "
+  const data = require('fs').readFileSync(0, 'utf-8').trim().split('\n');
+  const counts = {};
+  data.forEach(line => {
+    const event = JSON.parse(line);
+    counts[event.event_type] = (counts[event.event_type] || 0) + 1;
+  });
+  Object.entries(counts).sort((a,b) => b[1] - a[1]).forEach(([type, count]) =>
+    console.log(\`\${String(count).padStart(6)} \${type}\`)
+  );
+"
 
 # View recent events with formatting
-tail -5 ~/.agent-tracker/sessions.jsonl | jq '.'
+tail -5 ~/.agent-tracker/sessions.jsonl | node -e "
+  const data = require('fs').readFileSync(0, 'utf-8').trim().split('\n');
+  data.forEach(line => console.log(JSON.stringify(JSON.parse(line), null, 2)));
+"
 ```
 
 You should see both `session_start` and `session_end` events with proper session IDs and timestamps.
@@ -285,6 +298,6 @@ You should see both `session_start` and `session_end` events with proper session
 ## Common Issues
 
 1. **Hooks silently failing**: Check hook script permissions (`chmod +x scripts/hooks/*.sh`)
-2. **jq not found**: Install jq (`brew install jq` on macOS)
+2. **Node.js not found**: Ensure Node.js is installed and in your PATH
 3. **No events written**: Verify `~/.agent-tracker/` directory exists and is writable
 4. **Nested session issue**: Always test from a fresh terminal, not from within Claude

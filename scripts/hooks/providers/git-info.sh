@@ -53,17 +53,22 @@ if [ "$IS_REPO" = "true" ]; then
   fi
 fi
 
-# Output JSON
-jq -nc \
-  --arg is_repo "$IS_REPO" \
-  --arg branch "$BRANCH" \
-  --arg is_worktree "$IS_WORKTREE" \
-  --arg is_dirty "$IS_DIRTY" \
-  --arg repo_name "$REPO_NAME" \
-  '{
-    is_repo: ($is_repo == "true"),
-    branch: $branch,
-    is_worktree: ($is_worktree == "true"),
-    is_dirty: ($is_dirty == "true"),
-    repo_name: $repo_name
-  }'
+# Output JSON using Node.js CLI
+# Find the CLI relative to this script (go up 3 levels from providers/ to repo root)
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
+CLI_PATH="${REPO_ROOT}/dist/hooks/cli.js"
+
+# Create JSON input for the CLI
+JSON_INPUT=$(cat <<EOF
+{
+  "is_repo": "$IS_REPO",
+  "branch": "$BRANCH",
+  "is_worktree": "$IS_WORKTREE",
+  "is_dirty": "$IS_DIRTY",
+  "repo_name": "$REPO_NAME"
+}
+EOF
+)
+
+# Call Node.js CLI to create JSON output
+echo "$JSON_INPUT" | node "$CLI_PATH" --operation=create-git-info

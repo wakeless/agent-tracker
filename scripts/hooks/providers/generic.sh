@@ -5,23 +5,22 @@
 set -euo pipefail
 
 # Extract basic terminal information from environment
-TERM_PROGRAM="${TERM_PROGRAM:-unknown}"
 TERM_SESSION_ID="${TERM_SESSION_ID:-unknown}"
-LC_TERMINAL="${LC_TERMINAL:-unknown}"
-LC_TERMINAL_VERSION="${LC_TERMINAL_VERSION:-unknown}"
 
-# Output generic terminal info as JSON
-# This provides the minimum required fields for compatibility
-jq -nc \
-  --arg session_id "$TERM_SESSION_ID" \
-  --arg profile "unknown" \
-  --arg tab_name "unknown" \
-  --arg window_name "unknown" \
-  '{
-    session_id: $session_id,
-    profile: $profile,
-    tab_name: $tab_name,
-    window_name: $window_name
-  }'
+# Output generic terminal info as JSON using Node.js CLI
+# Find the CLI relative to this script (go up 3 levels from providers/ to repo root)
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
+CLI_PATH="${REPO_ROOT}/dist/hooks/cli.js"
+
+# Create JSON input for the CLI
+JSON_INPUT=$(cat <<EOF
+{
+  "session_id": "$TERM_SESSION_ID"
+}
+EOF
+)
+
+# Call Node.js CLI to create JSON output
+echo "$JSON_INPUT" | node "$CLI_PATH" --operation=create-generic-provider
 
 exit 0

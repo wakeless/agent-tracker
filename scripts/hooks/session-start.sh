@@ -6,6 +6,8 @@ set -euo pipefail
 
 # Get the directory where this script is located
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+CLI_PATH="${REPO_ROOT}/dist/hooks/cli.js"
 
 # Debug log to verify hook is being called
 echo "[$(date)] Hook called" >> "$HOME/.agent-tracker/debug.log" 2>&1 || true
@@ -13,10 +15,10 @@ echo "[$(date)] Hook called" >> "$HOME/.agent-tracker/debug.log" 2>&1 || true
 # Read hook data from stdin
 HOOK_DATA=$(cat)
 
-# Extract data from hook input
-SESSION_ID=$(echo "$HOOK_DATA" | jq -r '.session_id // "unknown"')
-CWD=$(echo "$HOOK_DATA" | jq -r '.cwd // "unknown"')
-TRANSCRIPT_PATH=$(echo "$HOOK_DATA" | jq -r '.transcript_path // "unknown"')
+# Extract data from hook input using Node.js CLI
+SESSION_ID=$(echo "$HOOK_DATA" | node "$CLI_PATH" --operation=extract-field --field=session_id --default=unknown)
+CWD=$(echo "$HOOK_DATA" | node "$CLI_PATH" --operation=extract-field --field=cwd --default=unknown)
+TRANSCRIPT_PATH=$(echo "$HOOK_DATA" | node "$CLI_PATH" --operation=extract-field --field=transcript_path --default=unknown)
 
 # Capture basic terminal information
 if TTY_OUTPUT=$(tty 2>&1); then
@@ -44,11 +46,11 @@ else
   TERMINAL_PROVIDER_JSON=$("${SCRIPT_DIR}/providers/generic.sh")
 fi
 
-# Extract provider data for use in final JSON
-ITERM_SESSION_ID=$(echo "$TERMINAL_PROVIDER_JSON" | jq -r '.session_id // "unknown"')
-ITERM_PROFILE=$(echo "$TERMINAL_PROVIDER_JSON" | jq -r '.profile // "unknown"')
-ITERM_TAB_NAME=$(echo "$TERMINAL_PROVIDER_JSON" | jq -r '.tab_name // "unknown"')
-ITERM_WINDOW_NAME=$(echo "$TERMINAL_PROVIDER_JSON" | jq -r '.window_name // "unknown"')
+# Extract provider data for use in final JSON using Node.js CLI
+ITERM_SESSION_ID=$(echo "$TERMINAL_PROVIDER_JSON" | node "$CLI_PATH" --operation=extract-field --field=session_id --default=unknown)
+ITERM_PROFILE=$(echo "$TERMINAL_PROVIDER_JSON" | node "$CLI_PATH" --operation=extract-field --field=profile --default=unknown)
+ITERM_TAB_NAME=$(echo "$TERMINAL_PROVIDER_JSON" | node "$CLI_PATH" --operation=extract-field --field=tab_name --default=unknown)
+ITERM_WINDOW_NAME=$(echo "$TERMINAL_PROVIDER_JSON" | node "$CLI_PATH" --operation=extract-field --field=window_name --default=unknown)
 
 # Docker detection
 DOCKER_CONTAINER="false"
@@ -73,12 +75,12 @@ fi
 # Get git information
 GIT_INFO_JSON=$("${SCRIPT_DIR}/providers/git-info.sh" "$CWD" 2>/dev/null || echo '{"is_repo":false,"branch":"unknown","is_worktree":false,"is_dirty":false,"repo_name":"unknown"}')
 
-# Extract git fields
-GIT_IS_REPO=$(echo "$GIT_INFO_JSON" | jq -r '.is_repo')
-GIT_BRANCH=$(echo "$GIT_INFO_JSON" | jq -r '.branch')
-GIT_IS_WORKTREE=$(echo "$GIT_INFO_JSON" | jq -r '.is_worktree')
-GIT_IS_DIRTY=$(echo "$GIT_INFO_JSON" | jq -r '.is_dirty')
-GIT_REPO_NAME=$(echo "$GIT_INFO_JSON" | jq -r '.repo_name')
+# Extract git fields using Node.js CLI
+GIT_IS_REPO=$(echo "$GIT_INFO_JSON" | node "$CLI_PATH" --operation=extract-field --field=is_repo --default=false)
+GIT_BRANCH=$(echo "$GIT_INFO_JSON" | node "$CLI_PATH" --operation=extract-field --field=branch --default=unknown)
+GIT_IS_WORKTREE=$(echo "$GIT_INFO_JSON" | node "$CLI_PATH" --operation=extract-field --field=is_worktree --default=false)
+GIT_IS_DIRTY=$(echo "$GIT_INFO_JSON" | node "$CLI_PATH" --operation=extract-field --field=is_dirty --default=false)
+GIT_REPO_NAME=$(echo "$GIT_INFO_JSON" | node "$CLI_PATH" --operation=extract-field --field=repo_name --default=unknown)
 
 # Get timestamp (macOS compatible)
 TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
@@ -87,68 +89,54 @@ TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 LOG_DIR="${HOME}/.agent-tracker"
 mkdir -p "$LOG_DIR"
 
-# Create event object (compact single-line JSON)
-EVENT=$(jq -nc \
-  --arg event_type "session_start" \
-  --arg session_id "$SESSION_ID" \
-  --arg cwd "$CWD" \
-  --arg transcript_path "$TRANSCRIPT_PATH" \
-  --arg tty "$TTY" \
-  --arg term "$TERM_VAR" \
-  --arg shell "$SHELL_VAR" \
-  --arg ppid "$PPID_VAR" \
-  --arg term_program "$TERM_PROGRAM" \
-  --arg term_session_id "$TERM_SESSION_ID" \
-  --arg lc_terminal "$LC_TERMINAL" \
-  --arg lc_terminal_version "$LC_TERMINAL_VERSION" \
-  --arg iterm_session_id "$ITERM_SESSION_ID" \
-  --arg iterm_profile "$ITERM_PROFILE" \
-  --arg iterm_tab_name "$ITERM_TAB_NAME" \
-  --arg iterm_window_name "$ITERM_WINDOW_NAME" \
-  --arg docker_container "$DOCKER_CONTAINER" \
-  --arg docker_container_id "$DOCKER_CONTAINER_ID" \
-  --arg docker_container_name "$DOCKER_CONTAINER_NAME" \
-  --argjson git_is_repo "$GIT_IS_REPO" \
-  --arg git_branch "$GIT_BRANCH" \
-  --argjson git_is_worktree "$GIT_IS_WORKTREE" \
-  --argjson git_is_dirty "$GIT_IS_DIRTY" \
-  --arg git_repo_name "$GIT_REPO_NAME" \
-  --arg timestamp "$TIMESTAMP" \
-  '{
-    event_type: $event_type,
-    session_id: $session_id,
-    cwd: $cwd,
-    transcript_path: $transcript_path,
-    terminal: {
-      tty: $tty,
-      term: $term,
-      shell: $shell,
-      ppid: $ppid,
-      term_program: $term_program,
-      term_session_id: $term_session_id,
-      lc_terminal: $lc_terminal,
-      lc_terminal_version: $lc_terminal_version,
-      iterm: {
-        session_id: $iterm_session_id,
-        profile: $iterm_profile,
-        tab_name: $iterm_tab_name,
-        window_name: $iterm_window_name
-      }
-    },
-    docker: {
-      is_container: ($docker_container == "true"),
-      container_id: $docker_container_id,
-      container_name: $docker_container_name
-    },
-    git: {
-      is_repo: $git_is_repo,
-      branch: $git_branch,
-      is_worktree: $git_is_worktree,
-      is_dirty: $git_is_dirty,
-      repo_name: $git_repo_name
-    },
-    timestamp: $timestamp
-  }')
+# Create event object using Node.js CLI
+# Convert string booleans to actual booleans for Docker
+if [ "$DOCKER_CONTAINER" = "true" ]; then
+  DOCKER_IS_CONTAINER="true"
+else
+  DOCKER_IS_CONTAINER="false"
+fi
+
+JSON_INPUT=$(cat <<EOF
+{
+  "event_type": "session_start",
+  "session_id": "$SESSION_ID",
+  "cwd": "$CWD",
+  "transcript_path": "$TRANSCRIPT_PATH",
+  "terminal": {
+    "tty": "$TTY",
+    "term": "$TERM_VAR",
+    "shell": "$SHELL_VAR",
+    "ppid": "$PPID_VAR",
+    "term_program": "$TERM_PROGRAM",
+    "term_session_id": "$TERM_SESSION_ID",
+    "lc_terminal": "$LC_TERMINAL",
+    "lc_terminal_version": "$LC_TERMINAL_VERSION",
+    "iterm": {
+      "session_id": "$ITERM_SESSION_ID",
+      "profile": "$ITERM_PROFILE",
+      "tab_name": "$ITERM_TAB_NAME",
+      "window_name": "$ITERM_WINDOW_NAME"
+    }
+  },
+  "docker": {
+    "is_container": $DOCKER_IS_CONTAINER,
+    "container_id": "$DOCKER_CONTAINER_ID",
+    "container_name": "$DOCKER_CONTAINER_NAME"
+  },
+  "git": {
+    "is_repo": $GIT_IS_REPO,
+    "branch": "$GIT_BRANCH",
+    "is_worktree": $GIT_IS_WORKTREE,
+    "is_dirty": $GIT_IS_DIRTY,
+    "repo_name": "$GIT_REPO_NAME"
+  },
+  "timestamp": "$TIMESTAMP"
+}
+EOF
+)
+
+EVENT=$(echo "$JSON_INPUT" | node "$CLI_PATH" --operation=create-session-event)
 
 # Append to JSONL file
 echo "$EVENT" >> "$LOG_DIR/sessions.jsonl"

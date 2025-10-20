@@ -38,17 +38,23 @@ ITERM_WINDOW_NAME=$(osascript -e 'tell application "iTerm2"
   end try
 end tell' 2>/dev/null || echo "unknown")
 
-# Output iTerm2-specific info as JSON
-jq -nc \
-  --arg session_id "$ITERM_SESSION_ID" \
-  --arg profile "$ITERM_PROFILE" \
-  --arg tab_name "$ITERM_TAB_NAME" \
-  --arg window_name "$ITERM_WINDOW_NAME" \
-  '{
-    session_id: $session_id,
-    profile: $profile,
-    tab_name: $tab_name,
-    window_name: $window_name
-  }'
+# Output iTerm2-specific info as JSON using Node.js CLI
+# Find the CLI relative to this script (go up 3 levels from providers/ to repo root)
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
+CLI_PATH="${REPO_ROOT}/dist/hooks/cli.js"
+
+# Create JSON input for the CLI
+JSON_INPUT=$(cat <<EOF
+{
+  "session_id": "$ITERM_SESSION_ID",
+  "profile": "$ITERM_PROFILE",
+  "tab_name": "$ITERM_TAB_NAME",
+  "window_name": "$ITERM_WINDOW_NAME"
+}
+EOF
+)
+
+# Call Node.js CLI to create JSON output
+echo "$JSON_INPUT" | node "$CLI_PATH" --operation=create-generic-provider
 
 exit 0

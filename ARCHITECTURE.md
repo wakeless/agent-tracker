@@ -179,18 +179,21 @@ fi
 SESSION_ID="${MY_TERM_SESSION:-unknown}"
 PROFILE="${MY_TERM_PROFILE:-unknown}"
 
-# 3. Output JSON
-jq -nc \
-  --arg session_id "$SESSION_ID" \
-  --arg profile "$PROFILE" \
-  --arg tab_name "unknown" \
-  --arg window_name "unknown" \
-  '{
-    session_id: $session_id,
-    profile: $profile,
-    tab_name: $tab_name,
-    window_name: $window_name
-  }'
+# 3. Output JSON using Node.js CLI
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
+CLI_PATH="${REPO_ROOT}/dist/hooks/cli.js"
+
+JSON_INPUT=$(cat <<EOF
+{
+  "session_id": "$SESSION_ID",
+  "profile": "$PROFILE",
+  "tab_name": "unknown",
+  "window_name": "unknown"
+}
+EOF
+)
+
+echo "$JSON_INPUT" | node "$CLI_PATH" --operation=create-generic-provider
 ```
 
 ### 3. Event Stream

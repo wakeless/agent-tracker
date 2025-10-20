@@ -5,12 +5,17 @@
 
 set -euo pipefail
 
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+CLI_PATH="${REPO_ROOT}/dist/hooks/cli.js"
+
 # Read hook data from stdin
 HOOK_DATA=$(cat)
 
-# Extract core data from hook input
-SESSION_ID=$(echo "$HOOK_DATA" | jq -r '.session_id // "unknown"')
-HOOK_EVENT_NAME=$(echo "$HOOK_DATA" | jq -r '.hook_event_name // "unknown"')
+# Extract core data from hook input using Node.js CLI
+SESSION_ID=$(echo "$HOOK_DATA" | node "$CLI_PATH" --operation=extract-field --field=session_id --default=unknown)
+HOOK_EVENT_NAME=$(echo "$HOOK_DATA" | node "$CLI_PATH" --operation=extract-field --field=hook_event_name --default=unknown)
 
 # Initialize optional fields
 TOOL_NAME="unknown"
@@ -20,8 +25,8 @@ NOTIFICATION_MESSAGE="unknown"
 case "$HOOK_EVENT_NAME" in
   "PostToolUse")
     ACTIVITY_TYPE="tool_use"
-    # Extract tool name from hook data
-    TOOL_NAME=$(echo "$HOOK_DATA" | jq -r '.tool_name // "unknown"')
+    # Extract tool name from hook data using Node.js CLI
+    TOOL_NAME=$(echo "$HOOK_DATA" | node "$CLI_PATH" --operation=extract-field --field=tool_name --default=unknown)
     ;;
   "UserPromptSubmit")
     ACTIVITY_TYPE="prompt_submit"
@@ -34,8 +39,8 @@ case "$HOOK_EVENT_NAME" in
     ;;
   "Notification")
     ACTIVITY_TYPE="notification"
-    # Extract notification message
-    NOTIFICATION_MESSAGE=$(echo "$HOOK_DATA" | jq -r '.message // "unknown"')
+    # Extract notification message using Node.js CLI
+    NOTIFICATION_MESSAGE=$(echo "$HOOK_DATA" | node "$CLI_PATH" --operation=extract-field --field=message --default=unknown)
     ;;
   *)
     # Unknown hook type, skip
@@ -50,24 +55,20 @@ TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 LOG_DIR="${HOME}/.agent-tracker"
 mkdir -p "$LOG_DIR"
 
-# Create activity event (compact single-line JSON)
-EVENT=$(jq -nc \
-  --arg event_type "activity" \
-  --arg activity_type "$ACTIVITY_TYPE" \
-  --arg session_id "$SESSION_ID" \
-  --arg timestamp "$TIMESTAMP" \
-  --arg tool_name "$TOOL_NAME" \
-  --arg notification_message "$NOTIFICATION_MESSAGE" \
-  --arg hook_event_name "$HOOK_EVENT_NAME" \
-  '{
-    event_type: $event_type,
-    activity_type: $activity_type,
-    session_id: $session_id,
-    timestamp: $timestamp,
-    tool_name: $tool_name,
-    notification_message: $notification_message,
-    hook_event_name: $hook_event_name
-  }')
+# Create activity event using Node.js CLI
+JSON_INPUT=$(cat <<EOF
+{
+  "activity_type": "$ACTIVITY_TYPE",
+  "session_id": "$SESSION_ID",
+  "timestamp": "$TIMESTAMP",
+  "tool_name": "$TOOL_NAME",
+  "notification_message": "$NOTIFICATION_MESSAGE",
+  "hook_event_name": "$HOOK_EVENT_NAME"
+}
+EOF
+)
+
+EVENT=$(echo "$JSON_INPUT" | node "$CLI_PATH" --operation=create-activity-event)
 
 # Append to JSONL file
 echo "$EVENT" >> "$LOG_DIR/sessions.jsonl"
