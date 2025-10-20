@@ -10,9 +10,16 @@
   "files": [
     "dist",
     "scripts/hooks",
+    ".claude-plugin",
     "README.md",
     "LICENSE"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
     "dev": "tsx src/cli.tsx",
     "build": "tsc",

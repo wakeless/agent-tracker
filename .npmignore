@@ -1,0 +1,45 @@
+# Source files
+src/
+tsconfig.json
+
+# Tests
+**/*.test.ts
+**/*.test.tsx
+vitest.config.ts
+
+# Development
+.vscode/
+.idea/
+*.log
+npm-debug.log*
+
+# Documentation site
+website/
+
+# Demo and testing
+demo-repo/
+scripts/test-session.sh
+
+# Git
+.git/
+.gitignore
+
+# CI/CD
+.github/
+
+# Environment
+.env
+.env.*
+
+# Misc
+.DS_Store
+*.swp
+*.swo
+*~
+
+# Keep these in the package:
+# dist/
+# scripts/hooks/
+# README.md
+# LICENSE
+# .claude-plugin/
