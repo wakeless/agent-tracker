@@ -11,32 +11,33 @@ type FeatureItem = {
 
 const FeatureList: FeatureItem[] = [
   {
-    title: 'Real-Time Tracking',
+    title: 'The Problem',
     Svg: require('@site/static/img/undraw_docusaurus_mountain.svg').default,
     description: (
       <>
-        Monitor all your AI agent sessions in real-time with a beautiful TUI dashboard.
-        Never lose track of Claude Code windows again!
+        Claude Code windows get buried in tabs, suspended with Ctrl+Z, or hidden in background terminals.
+        I'd start a session, switch tasks, and completely forget where I left it running.
       </>
     ),
   },
   {
-    title: 'Rich Context',
+    title: 'The Solution',
     Svg: require('@site/static/img/undraw_docusaurus_tree.svg').default,
     description: (
       <>
-        Capture terminal info, git repo details, and session activity automatically.
-        Know exactly which project each session is working on.
+        A live dashboard showing every Claude session with context: which project, which terminal,
+        what it's doing right now. All in a clean TUI you can pull up anytime with one command.
       </>
     ),
   },
   {
-    title: 'Multi-Agent Support (Planned)',
+    title: 'How It Works',
     Svg: require('@site/static/img/undraw_docusaurus_react.svg').default,
     description: (
       <>
-        Currently supports Claude Code, with plans to add Cursor, Windsurf, Aider,
-        and other AI coding agents in the future.
+        Uses Claude's plugin hooks to capture sessions as they start/end and track their activity.
+        Extracts rich terminal context (iTerm tabs, Docker containers) and streams everything
+        to a dashboard in real-time.
       </>
     ),
   },

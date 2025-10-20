@@ -14,9 +14,23 @@ function HomepageHeader() {
     <header className={clsx('hero hero--primary', styles.heroBanner)}>
       <div className="container">
         <Heading as="h1" className="hero__title">
-          {siteConfig.title}
+          I kept losing my Claude windows
         </Heading>
-        <p className="hero__subtitle">{siteConfig.tagline}</p>
+        <p className="hero__subtitle">
+          So I built a dashboard to track them all
+        </p>
+        <div style={{marginTop: '2rem', maxWidth: '700px', margin: '2rem auto'}}>
+          <p style={{fontSize: '1.1rem', lineHeight: '1.6'}}>
+            You know that feeling when you've got 5 Claude Code sessions scattered across
+            different terminals and tabs? Some running, some suspended with Ctrl+Z, some you
+            forgot about entirely? Yeah, me too.
+          </p>
+          <p style={{fontSize: '1.1rem', lineHeight: '1.6', marginTop: '1rem'}}>
+            <strong>Agent Tracker</strong> is my solution: a real-time TUI dashboard that shows
+            all your Claude sessions in one place. No more lost work, no more "which terminal
+            was that in?"
+          </p>
+        </div>
         <div className={styles.buttons}>
           <Link
             className="button button--secondary button--lg"
