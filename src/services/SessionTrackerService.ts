@@ -63,7 +63,7 @@ export class SessionTrackerService {
         onActivity: (event) => {
           // Check if this is an MCP work summary tool call
           if (event.activity_type === 'tool_use' &&
-              event.tool_name === 'mcp__agent_tracker__set_work_summary' &&
+              event.tool_name === 'mcp__plugin_agent-tracker_agent-tracker__set_work_summary' &&
               event.tool_input) {
             // Extract summary from tool parameters
             const summary = event.tool_input.summary as string;

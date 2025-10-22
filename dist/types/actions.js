@@ -36,5 +36,9 @@ export const actions = {
         type: 'UPDATE_SESSION_STATUSES',
         payload: { currentTime, inactiveThresholdMs, removeEndedSessionsMs },
     }),
+    updateWorkSummary: (sessionId, summary) => ({
+        type: 'UPDATE_WORK_SUMMARY',
+        payload: { sessionId, summary },
+    }),
 };
 //# sourceMappingURL=actions.js.map

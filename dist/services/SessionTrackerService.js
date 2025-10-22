@@ -40,6 +40,16 @@ export class SessionTrackerService {
                 this.store.dispatch(actions.sessionEnd(event));
             },
             onActivity: (event) => {
+                // Check if this is an MCP work summary tool call
+                if (event.activity_type === 'tool_use' &&
+                    event.tool_name === 'mcp__plugin_agent-tracker_agent-tracker__set_work_summary' &&
+                    event.tool_input) {
+                    // Extract summary from tool parameters
+                    const summary = event.tool_input.summary;
+                    if (summary && typeof summary === 'string') {
+                        this.store.dispatch(actions.updateWorkSummary(event.session_id, summary));
+                    }
+                }
                 // Dispatch specific activity action based on activity_type
                 switch (event.activity_type) {
                     case 'tool_use':

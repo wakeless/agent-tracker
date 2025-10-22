@@ -48,6 +48,11 @@ export interface TerminalInfo {
     /** Terminal-specific metadata from the active provider (iTerm2, generic, etc.) */
     iterm: ITermInfo;
 }
+export interface TranscriptFileInfo {
+    birthtime: string;
+    mtime: string;
+    size: number;
+}
 export interface BaseEvent {
     event_type: 'session_start' | 'session_end';
     session_id: string;
@@ -60,6 +65,7 @@ export interface BaseEvent {
 }
 export interface SessionStartEvent extends BaseEvent {
     event_type: 'session_start';
+    transcript_file?: TranscriptFileInfo;
 }
 export interface SessionEndEvent extends BaseEvent {
     event_type: 'session_end';
@@ -74,6 +80,7 @@ export interface ActivityEvent {
     session_id: string;
     timestamp: string;
     tool_name?: string;
+    tool_input?: Record<string, unknown>;
     notification_message?: string;
     hook_event_name?: string;
 }

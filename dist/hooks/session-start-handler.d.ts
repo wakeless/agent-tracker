@@ -38,11 +38,17 @@ interface GitInfo {
     is_dirty: boolean;
     repo_name: string;
 }
+interface TranscriptFileInfo {
+    birthtime: string;
+    mtime: string;
+    size: number;
+}
 interface SessionStartEvent {
     event_type: 'session_start';
     session_id: string;
     cwd: string;
     transcript_path: string;
+    transcript_file?: TranscriptFileInfo;
     terminal: TerminalInfo;
     docker: DockerInfo;
     git: GitInfo;

@@ -13,6 +13,11 @@ export interface Session {
     awaitingInput: boolean;
     notificationMessage?: string;
     displayName?: string;
+    workSummary?: string;
+    isPhantom?: boolean;
+    phantomOf?: string;
+    transcriptBirthtime?: Date;
+    transcriptModifiedTime?: Date;
 }
 export interface SessionSnapshot {
     sessions: Session[];

@@ -62,8 +62,6 @@ function SessionListItem({ session, isSelected }) {
     // Get stable colors for repo and branch (background + foreground)
     const repoColors = getStableColor(repoName);
     const branchColors = branch ? getStableColor(branch) : null;
-    // Simplified secondary info: just show time since last activity
-    const secondaryInfo = timeSince;
     return (React.createElement(Box, { width: "100%" },
         React.createElement(Box, { width: 2, flexShrink: 0 }, isSelected && (React.createElement(Text, { bold: true, color: "cyan" }, '> '))),
         React.createElement(Box, { flexDirection: "column", flexGrow: 1, minWidth: 0 },
@@ -78,8 +76,10 @@ function SessionListItem({ session, isSelected }) {
                 tabName && (React.createElement(React.Fragment, null,
                     React.createElement(Text, { dimColor: true }, " \u2013 "),
                     React.createElement(Text, { dimColor: true }, tabName)))),
+            session.workSummary && (React.createElement(Box, { marginLeft: 2, minWidth: 0 },
+                React.createElement(Text, { dimColor: true, italic: true, wrap: "truncate-end" }, session.workSummary))),
             React.createElement(Box, { marginLeft: 2, minWidth: 0 },
-                React.createElement(Text, { dimColor: true, wrap: "truncate-end" }, secondaryInfo)))));
+                React.createElement(Text, { dimColor: true, wrap: "truncate-end" }, timeSince)))));
 }
 function formatTimeSince(date) {
     const seconds = Math.floor((Date.now() - date.getTime()) / 1000);

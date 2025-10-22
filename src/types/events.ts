@@ -55,6 +55,12 @@ export interface TerminalInfo {
   iterm: ITermInfo;
 }
 
+export interface TranscriptFileInfo {
+  birthtime: string;  // File creation time (ISO string)
+  mtime: string;      // File modification time (ISO string)
+  size: number;       // File size in bytes
+}
+
 export interface BaseEvent {
   event_type: 'session_start' | 'session_end';
   session_id: string;
@@ -68,6 +74,7 @@ export interface BaseEvent {
 
 export interface SessionStartEvent extends BaseEvent {
   event_type: 'session_start';
+  transcript_file?: TranscriptFileInfo;  // File stats for phantom detection
 }
 
 export interface SessionEndEvent extends BaseEvent {

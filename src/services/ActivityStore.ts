@@ -28,6 +28,61 @@ const initialState: ActivityState = {
   },
 };
 
+// ============================================================================
+// Phantom Session Detection
+// ============================================================================
+
+/**
+ * Detect if a session is a phantom based on transcript file times
+ * A session is phantom if file mtime - birthtime < 60 seconds
+ */
+function detectPhantomSession(
+  transcriptFile: { birthtime: string; mtime: string; size: number } | undefined
+): boolean {
+  if (!transcriptFile) return false;
+
+  const birthtime = new Date(transcriptFile.birthtime);
+  const mtime = new Date(transcriptFile.mtime);
+  const diffSeconds = (mtime.getTime() - birthtime.getTime()) / 1000;
+
+  // If file hasn't been written to after creation, it's likely a phantom
+  // Increased threshold to 50KB to catch phantom sessions with file-history-snapshot entries
+  return diffSeconds < 60 && transcriptFile.size < 50000;
+}
+
+/**
+ * Find the real session that this phantom belongs to
+ * Look for sessions in the same CWD with activity overlapping the phantom's start time
+ */
+function findRealSession(
+  phantomSessionId: string,
+  phantomStartTime: Date,
+  phantomCwd: string,
+  existingSessions: Map<string, Session>
+): string | undefined {
+  for (const [sessionId, session] of existingSessions) {
+    // Skip self
+    if (sessionId === phantomSessionId) continue;
+
+    // Must be in same CWD
+    if (session.cwd !== phantomCwd) continue;
+
+    // Must have started before phantom
+    if (session.startTime >= phantomStartTime) continue;
+
+    // Must still be active at phantom's start time (no end time OR end time > phantom start)
+    if (session.endTime && session.endTime < phantomStartTime) continue;
+
+    // Must have recent activity (within 30 minutes of phantom start)
+    const timeDiff = Math.abs(session.lastActivityTime.getTime() - phantomStartTime.getTime());
+    if (timeDiff < 30 * 60 * 1000) {
+      return sessionId;
+    }
+  }
+
+  return undefined;
+}
+
 /**
  * Pure Reducer Function
  * Takes current state and action, returns new state
@@ -36,6 +91,27 @@ export function activityReducer(state: ActivityState, action: Action): ActivityS
   switch (action.type) {
     case 'SESSION_START': {
       const { payload } = action;
+
+      // Parse transcript file info
+      const transcriptFile = payload.transcript_file as
+        | { birthtime: string; mtime: string; size: number }
+        | undefined;
+
+      // Detect if this is a phantom session
+      const isPhantom = detectPhantomSession(transcriptFile);
+      const startTime = new Date(payload.timestamp);
+
+      // Find the real session if this is a phantom
+      let phantomOf: string | undefined;
+      if (isPhantom) {
+        phantomOf = findRealSession(
+          payload.session_id,
+          startTime,
+          payload.cwd,
+          state.sessions
+        );
+      }
+
       const newSession: Session = {
         id: payload.session_id,
         cwd: payload.cwd,
@@ -43,9 +119,14 @@ export function activityReducer(state: ActivityState, action: Action): ActivityS
         terminal: payload.terminal,
         git: payload.git,
         status: 'active',
-        startTime: new Date(payload.timestamp),
-        lastActivityTime: new Date(payload.timestamp),
+        startTime,
+        lastActivityTime: startTime,
         awaitingInput: false,
+        // Phantom detection fields
+        isPhantom,
+        phantomOf,
+        transcriptBirthtime: transcriptFile ? new Date(transcriptFile.birthtime) : undefined,
+        transcriptModifiedTime: transcriptFile ? new Date(transcriptFile.mtime) : undefined,
       };
 
       const newSessions = new Map(state.sessions);
@@ -251,7 +332,7 @@ export function activityReducer(state: ActivityState, action: Action): ActivityS
       const { sessionId, summary } = action.payload;
       const session = state.sessions.get(sessionId);
 
-      if (!session || session.status === 'ended') return state;
+      if (!session) return state;
 
       const newSessions = new Map(state.sessions);
       newSessions.set(sessionId, {
@@ -326,9 +407,12 @@ export class ActivityStore {
   /**
    * Get all sessions, sorted by priority
    * Priority order: awaiting input > active > inactive > ended
+   * Phantom sessions are filtered out by default
    */
   getSessions(): Session[] {
-    const sessions = Array.from(this.state.sessions.values());
+    const sessions = Array.from(this.state.sessions.values())
+      // Filter out phantom sessions
+      .filter(session => !session.isPhantom);
 
     return sessions.sort((a, b) => {
       // Awaiting input sessions always at top (highest priority)

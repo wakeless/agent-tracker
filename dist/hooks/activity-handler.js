@@ -48,6 +48,10 @@ export function handleActivity(hookInput) {
     // Add tool name for tool_use events
     if (activityType === 'tool_use' && hookInput.tool_name) {
         event.tool_name = hookInput.tool_name;
+        // Include tool parameters if available
+        if (hookInput.tool_input) {
+            event.tool_input = hookInput.tool_input;
+        }
     }
     // Add notification message for notification events
     if (activityType === 'notification' && hookInput.message) {

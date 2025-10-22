@@ -172,6 +172,28 @@ function getDockerInfo() {
     };
 }
 // ============================================================================
+// Transcript File Information
+// ============================================================================
+/**
+ * Get transcript file statistics for phantom detection
+ */
+function getTranscriptFileInfo(transcriptPath) {
+    if (!transcriptPath || transcriptPath === 'unknown') {
+        return undefined;
+    }
+    try {
+        const stats = fs.statSync(transcriptPath);
+        return {
+            birthtime: stats.birthtime.toISOString(),
+            mtime: stats.mtime.toISOString(),
+            size: stats.size
+        };
+    }
+    catch {
+        return undefined;
+    }
+}
+// ============================================================================
 // Git Information
 // ============================================================================
 /**
@@ -247,11 +269,13 @@ function getGitInfo(cwd) {
  */
 export function handleSessionStart(hookInput) {
     const timestamp = new Date().toISOString();
+    const transcriptPath = hookInput.transcript_path || 'unknown';
     return {
         event_type: 'session_start',
         session_id: hookInput.session_id || 'unknown',
         cwd: hookInput.cwd || 'unknown',
-        transcript_path: hookInput.transcript_path || 'unknown',
+        transcript_path: transcriptPath,
+        transcript_file: getTranscriptFileInfo(transcriptPath),
         terminal: getTerminalInfo(),
         docker: getDockerInfo(),
         git: getGitInfo(hookInput.cwd || process.cwd()),

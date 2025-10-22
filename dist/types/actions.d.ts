@@ -8,13 +8,14 @@ export interface ActivityEvent {
     session_id: string;
     timestamp: string;
     tool_name?: string;
+    tool_input?: Record<string, unknown>;
     notification_message?: string;
     hook_event_name?: string;
 }
 /**
  * Action Types
  */
-export type ActionType = 'SESSION_START' | 'SESSION_END' | 'ACTIVITY_TOOL_USE' | 'ACTIVITY_PROMPT_SUBMIT' | 'ACTIVITY_STOP' | 'ACTIVITY_SUBAGENT_STOP' | 'ACTIVITY_NOTIFICATION' | 'UPDATE_SESSION_STATUSES';
+export type ActionType = 'SESSION_START' | 'SESSION_END' | 'ACTIVITY_TOOL_USE' | 'ACTIVITY_PROMPT_SUBMIT' | 'ACTIVITY_STOP' | 'ACTIVITY_SUBAGENT_STOP' | 'ACTIVITY_NOTIFICATION' | 'UPDATE_SESSION_STATUSES' | 'UPDATE_WORK_SUMMARY';
 /**
  * Action Interfaces
  */
@@ -54,10 +55,17 @@ export interface UpdateSessionStatusesAction {
         removeEndedSessionsMs: number;
     };
 }
+export interface UpdateWorkSummaryAction {
+    type: 'UPDATE_WORK_SUMMARY';
+    payload: {
+        sessionId: string;
+        summary: string;
+    };
+}
 /**
  * Discriminated Union of All Actions
  */
-export type Action = SessionStartAction | SessionEndAction | ActivityToolUseAction | ActivityPromptSubmitAction | ActivityStopAction | ActivitySubagentStopAction | ActivityNotificationAction | UpdateSessionStatusesAction;
+export type Action = SessionStartAction | SessionEndAction | ActivityToolUseAction | ActivityPromptSubmitAction | ActivityStopAction | ActivitySubagentStopAction | ActivityNotificationAction | UpdateSessionStatusesAction | UpdateWorkSummaryAction;
 /**
  * Action Creators
  */
@@ -70,5 +78,6 @@ export declare const actions: {
     activitySubagentStop: (event: ActivityEvent) => ActivitySubagentStopAction;
     activityNotification: (event: ActivityEvent) => ActivityNotificationAction;
     updateSessionStatuses: (currentTime: number, inactiveThresholdMs: number, removeEndedSessionsMs: number) => UpdateSessionStatusesAction;
+    updateWorkSummary: (sessionId: string, summary: string) => UpdateWorkSummaryAction;
 };
 //# sourceMappingURL=actions.d.ts.map

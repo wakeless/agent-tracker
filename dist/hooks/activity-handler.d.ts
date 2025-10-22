@@ -10,6 +10,7 @@ interface HookInput {
     hook_event_name: string;
     tool_name?: string;
     message?: string;
+    tool_input?: Record<string, unknown>;
     [key: string]: unknown;
 }
 interface ActivityEvent {
@@ -18,6 +19,7 @@ interface ActivityEvent {
     session_id: string;
     timestamp: string;
     tool_name?: string;
+    tool_input?: Record<string, unknown>;
     notification_message?: string;
     hook_event_name: string;
 }

@@ -35,15 +35,15 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: 'set_work_summary',
         description:
-          'Set a 5-word summary describing the current work being performed. ' +
-          'Call this when starting new work or when the direction of work changes significantly. ' +
-          'Examples: "Implementing user authentication system", "Fixing database connection issues", "Refactoring payment processing code"',
+          'Set a 5-7 word summary describing the current work being performed. ' +
+          'REQUIRED: Call this proactively when starting new work or when the direction of work changes significantly. ' +
+          'Examples: "Implementing user authentication system", "Fixing database connection timeout issues", "Refactoring payment processing code"',
         inputSchema: {
           type: 'object',
           properties: {
             summary: {
               type: 'string',
-              description: 'A 5-word summary of the current work (e.g., "Implementing user authentication system")',
+              description: 'A 5-7 word summary of the current work (e.g., "Implementing user authentication system")',
             },
           },
           required: ['summary'],

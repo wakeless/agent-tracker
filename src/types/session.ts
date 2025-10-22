@@ -25,6 +25,12 @@ export interface Session {
 
   // Work tracking
   workSummary?: string;
+
+  // Phantom session detection
+  isPhantom?: boolean;           // True if this is a phantom session
+  phantomOf?: string;            // Session ID this is a phantom of
+  transcriptBirthtime?: Date;    // Transcript file creation time
+  transcriptModifiedTime?: Date; // Transcript file last modified time
 }
 
 export interface SessionSnapshot {
