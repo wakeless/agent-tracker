@@ -1,6 +1,6 @@
 {
   "name": "agent-tracker",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Real-time TUI dashboard for tracking and monitoring active Claude Code sessions",
   "type": "module",
   "main": "dist/index.js",
