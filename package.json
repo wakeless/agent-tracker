@@ -30,6 +30,8 @@
     "test:ui": "vitest --ui",
     "demo:session": "./scripts/test-session.sh",
     "validate:work-summary": "tsx scripts/validate-work-summary.ts",
+    "debug:sessions": "tsx scripts/debug-sessions.ts",
+    "debug:timeline": "tsx scripts/debug-timeline.ts",
     "docs:dev": "cd website && npm start",
     "docs:build": "cd website && npm run build",
     "docs:serve": "cd website && npm run serve",

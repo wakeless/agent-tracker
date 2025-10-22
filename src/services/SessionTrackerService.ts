@@ -169,6 +169,27 @@ export class SessionTrackerService {
   }
 
   /**
+   * Get activity statistics
+   */
+  getStats() {
+    return this.store.getStats();
+  }
+
+  /**
+   * Get recent activity events
+   */
+  getRecentActivity(limit?: number) {
+    return this.store.getRecentActivity(limit);
+  }
+
+  /**
+   * Get activity events for a specific session
+   */
+  getSessionActivity(sessionId: string, limit?: number) {
+    return this.store.getSessionActivity(sessionId, limit);
+  }
+
+  /**
    * Check if the service is currently watching for events
    */
   isStarted(): boolean {

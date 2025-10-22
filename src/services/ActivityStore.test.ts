@@ -131,18 +131,22 @@ describe('ActivityStore', () => {
       expect(session?.lastActivityTime.toISOString()).toBe('2025-10-17T00:01:00.000Z');
     });
 
-    it('should not set awaitingInput on ended sessions', () => {
+    it('should re-activate ended sessions when activity resumes', () => {
       const startEvent = createSessionStartEvent('session-1');
       const endEvent = createSessionEndEvent('session-1');
       store.dispatch(actions.sessionStart(startEvent));
       store.dispatch(actions.sessionEnd(endEvent));
 
+      expect(store.getSession('session-1')?.status).toBe('ended');
+
+      // New activity should re-activate the session
       const stopEvent = createActivityEvent('session-1', 'stop');
       store.dispatch(actions.activityStop(stopEvent));
 
       const session = store.getSession('session-1');
-      expect(session?.status).toBe('ended');
-      expect(session?.awaitingInput).toBe(false);
+      expect(session?.status).toBe('active');
+      expect(session?.awaitingInput).toBe(true);
+      expect(session?.endTime).toBeUndefined();
     });
 
     it('should handle stop event on non-existent session gracefully', () => {
@@ -442,6 +446,131 @@ describe('ActivityStore', () => {
 
       expect(store.getSessions()).toHaveLength(0);
       expect(store.getStats().totalEvents).toBe(0);
+    });
+  });
+
+  describe('Session Re-activation', () => {
+    it('should re-activate ended session on ACTIVITY_TOOL_USE', () => {
+      const startEvent = createSessionStartEvent('session-1', '2025-10-22T12:30:00Z');
+      const endEvent = createSessionEndEvent('session-1', '2025-10-22T12:45:00Z');
+
+      store.dispatch(actions.sessionStart(startEvent));
+      store.dispatch(actions.sessionEnd(endEvent));
+
+      expect(store.getSession('session-1')?.status).toBe('ended');
+      expect(store.getSession('session-1')?.endTime).toBeDefined();
+
+      // Session re-opens, activity resumes
+      const toolEvent = createActivityEvent('session-1', 'tool_use', '2025-10-22T12:50:00Z', {
+        tool_name: 'Read'
+      });
+      store.dispatch(actions.activityToolUse(toolEvent));
+
+      const session = store.getSession('session-1');
+      expect(session?.status).toBe('active');
+      expect(session?.endTime).toBeUndefined();
+      expect(session?.awaitingInput).toBe(false);
+      expect(session?.lastActivityTime.toISOString()).toBe('2025-10-22T12:50:00.000Z');
+    });
+
+    it('should re-activate ended session on ACTIVITY_PROMPT_SUBMIT', () => {
+      store.dispatch(actions.sessionStart(createSessionStartEvent('session-1')));
+      store.dispatch(actions.sessionEnd(createSessionEndEvent('session-1')));
+
+      expect(store.getSession('session-1')?.status).toBe('ended');
+
+      const promptEvent = createActivityEvent('session-1', 'prompt_submit');
+      store.dispatch(actions.activityPromptSubmit(promptEvent));
+
+      const session = store.getSession('session-1');
+      expect(session?.status).toBe('active');
+      expect(session?.endTime).toBeUndefined();
+    });
+
+    it('should re-activate ended session on ACTIVITY_NOTIFICATION', () => {
+      store.dispatch(actions.sessionStart(createSessionStartEvent('session-1')));
+      store.dispatch(actions.sessionEnd(createSessionEndEvent('session-1')));
+
+      const notificationEvent = createActivityEvent('session-1', 'notification', undefined, {
+        notification_message: 'Awaiting user input'
+      });
+      store.dispatch(actions.activityNotification(notificationEvent));
+
+      const session = store.getSession('session-1');
+      expect(session?.status).toBe('active');
+      expect(session?.endTime).toBeUndefined();
+      expect(session?.awaitingInput).toBe(true);
+    });
+
+    it('should re-activate ended session on ACTIVITY_SUBAGENT_STOP', () => {
+      store.dispatch(actions.sessionStart(createSessionStartEvent('session-1')));
+      store.dispatch(actions.sessionEnd(createSessionEndEvent('session-1')));
+
+      const subagentEvent = createActivityEvent('session-1', 'subagent_stop');
+      store.dispatch(actions.activitySubagentStop(subagentEvent));
+
+      const session = store.getSession('session-1');
+      expect(session?.status).toBe('active');
+      expect(session?.endTime).toBeUndefined();
+    });
+
+    it('should handle multiple end/reactivate cycles', () => {
+      const now = Date.now();
+
+      // Start session
+      store.dispatch(actions.sessionStart(createSessionStartEvent('session-1', new Date(now).toISOString())));
+
+      // First cycle: end and reactivate
+      store.dispatch(actions.sessionEnd(createSessionEndEvent('session-1', new Date(now + 1000).toISOString())));
+      expect(store.getSession('session-1')?.status).toBe('ended');
+
+      store.dispatch(actions.activityToolUse(createActivityEvent('session-1', 'tool_use', new Date(now + 2000).toISOString())));
+      expect(store.getSession('session-1')?.status).toBe('active');
+
+      // Second cycle: end and reactivate again
+      store.dispatch(actions.sessionEnd(createSessionEndEvent('session-1', new Date(now + 3000).toISOString())));
+      expect(store.getSession('session-1')?.status).toBe('ended');
+
+      store.dispatch(actions.activityPromptSubmit(createActivityEvent('session-1', 'prompt_submit', new Date(now + 4000).toISOString())));
+      expect(store.getSession('session-1')?.status).toBe('active');
+    });
+
+    it('should update transcript activity for ended sessions', () => {
+      const now = new Date('2025-10-22T12:30:00Z');
+
+      store.dispatch(actions.sessionStart(createSessionStartEvent('session-1', now.toISOString())));
+      store.dispatch(actions.sessionEnd(createSessionEndEvent('session-1', new Date(now.getTime() + 60000).toISOString())));
+
+      expect(store.getSession('session-1')?.status).toBe('ended');
+
+      // Transcript shows activity after session ended (session was re-opened)
+      const newTimestamp = new Date(now.getTime() + 120000);
+      store.updateSessionActivityFromTranscript('session-1', newTimestamp);
+
+      const session = store.getSession('session-1');
+      expect(session?.status).toBe('active');
+      expect(session?.endTime).toBeUndefined();
+      expect(session?.lastActivityTime.toISOString()).toBe(newTimestamp.toISOString());
+    });
+
+    it('should not update if transcript timestamp is older than last activity', () => {
+      const now = new Date('2025-10-22T12:30:00Z');
+
+      store.dispatch(actions.sessionStart(createSessionStartEvent('session-1', now.toISOString())));
+
+      // Add some activity to move lastActivityTime forward
+      const lastActivityTime = new Date(now.getTime() + 60000);
+      store.dispatch(actions.activityToolUse(createActivityEvent('session-1', 'tool_use', lastActivityTime.toISOString())));
+
+      store.dispatch(actions.sessionEnd(createSessionEndEvent('session-1', new Date(now.getTime() + 70000).toISOString())));
+
+      // Transcript timestamp is older than last activity (30s vs 60s)
+      const oldTimestamp = new Date(now.getTime() + 30000);
+      store.updateSessionActivityFromTranscript('session-1', oldTimestamp);
+
+      const session = store.getSession('session-1');
+      expect(session?.status).toBe('ended'); // Should remain ended because timestamp is old
+      expect(session?.lastActivityTime.toISOString()).toBe(lastActivityTime.toISOString()); // Should keep the last activity time (tool use)
     });
   });
 });

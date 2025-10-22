@@ -174,6 +174,101 @@ npm run test:watch
 npm run test:ui
 ```
 
+### Debug Tools
+
+Agent Tracker includes debug tools to help troubleshoot session tracking issues:
+
+#### View Current Session State
+
+Dump all sessions and their current state as JSON:
+
+```bash
+# View all sessions with stats and counts
+npm run debug:sessions
+
+# View with pretty formatting (default)
+npm run debug:sessions -- --format pretty
+
+# View with compact formatting
+npm run debug:sessions -- --format compact
+
+# View a specific session
+npm run debug:sessions -- --session-id abc123
+
+# Exclude counts and stats for cleaner output
+npm run debug:sessions -- --no-counts --no-stats
+```
+
+**Output includes:**
+- All active sessions with full metadata
+- Session status (active, inactive, ended)
+- Awaiting input state
+- Work summaries
+- Session counts by status
+- Activity statistics
+
+#### View Session Event Timeline
+
+View a timeline of events for debugging activity tracking:
+
+```bash
+# View last 50 events across all sessions (default)
+npm run debug:timeline
+
+# View events for a specific session
+npm run debug:timeline -- --session-id 6550e84f-c6f8-466f-8476-16ab7b514e99
+
+# Filter by project directory
+npm run debug:timeline -- --cwd /path/to/project
+
+# Limit number of events
+npm run debug:timeline -- --limit 20
+
+# Output as JSON instead of table
+npm run debug:timeline -- --format json
+```
+
+**Timeline shows:**
+- Timestamp (HH:MM:SS format)
+- Session ID (first 8 characters)
+- Event type (session_start, session_end, tool_use, etc.)
+- Event details (tool names, notification messages, etc.)
+
+**Example timeline output:**
+```
+Time      Session   Event Type            Details
+────────  ────────  ────────────────────  ──────────────────────────────
+12:30:48  6550e84f  session_start
+12:31:15  6550e84f  tool_use              Read
+12:31:22  6550e84f  tool_use              Edit
+12:31:30  6550e84f  stop
+12:32:05  6550e84f  prompt_submit
+12:45:54  6550e84f  session_end
+12:50:15  6550e84f  tool_use              Read
+```
+
+This is especially useful for debugging:
+- Sessions that end but continue to have activity (re-opened sessions)
+- Missing events or gaps in activity
+- Phantom session detection
+- Hook timing issues
+
+### Debug Skill for Claude
+
+For a guided debugging experience in Claude Code, use the debug skill:
+
+```bash
+/debug-agent-tracker
+```
+
+This skill provides:
+- Step-by-step diagnostic workflow
+- Common issue patterns and fixes
+- Debug command examples
+- Architecture insights for troubleshooting
+
+The skill is available in `.claude/skills/debug-agent-tracker.md` and can be invoked from any Claude session working on this project.
+
 ### Quick Start Development
 
 ```bash

@@ -1,5 +1,15 @@
 This is a TypeScript CLI TUI written using Ink (React for CLIs).
 
+## Quick Start: Debugging Agent Tracker
+
+If you're debugging Agent Tracker issues (sessions not showing, incorrect states, etc.), use the debug skill:
+
+```bash
+/debug-agent-tracker
+```
+
+This provides a guided workflow with debug commands, common issues, and troubleshooting steps.
+
 ## Development Guidelines
 
 As an LLM agent working on this project:
@@ -169,6 +179,42 @@ Both commands will trigger the SessionStart hook and write an event to the JSONL
    ```
 
 You should see the session appear in the TUI and events logged in terminal 2.
+
+## Debug Tools Quick Reference
+
+**For detailed debugging workflow and troubleshooting, use the debug skill:**
+
+```bash
+/debug-agent-tracker
+```
+
+The skill provides step-by-step diagnosis, common issue patterns, and fixes.
+
+### Quick Commands
+
+```bash
+# View current session state (what the TUI sees)
+npm run debug:sessions -- --session-id <session-id>
+
+# View event timeline for a session
+npm run debug:timeline -- --session-id <session-id> --limit 30
+
+# Watch events in real-time
+tail -f ~/.agent-tracker/sessions.jsonl
+```
+
+### Common Quick Checks
+
+**Session not showing or incorrect state?**
+1. Run: `npm run debug:timeline -- --session-id <id>`
+2. Look for: `session_end` followed by activity → Session was re-opened
+3. Check state: `npm run debug:sessions -- --session-id <id>`
+
+**Key fields to verify:**
+- `status`: Should be "active" for running sessions
+- `isPhantom`: Should be false for real sessions
+- `lastActivityTime`: Should match recent activity
+- `endTime`: Should be undefined for active sessions
 
 # Important references
 

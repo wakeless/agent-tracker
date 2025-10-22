@@ -74,6 +74,21 @@ export declare class SessionTrackerService {
      */
     updateSessionActivityFromTranscript(sessionId: string, timestamp: Date): void;
     /**
+     * Get activity statistics
+     */
+    getStats(): {
+        totalEvents: number;
+        eventsByType: Record<string, number>;
+    };
+    /**
+     * Get recent activity events
+     */
+    getRecentActivity(limit?: number): import("../types/actions.js").ActivityEvent[];
+    /**
+     * Get activity events for a specific session
+     */
+    getSessionActivity(sessionId: string, limit?: number): import("../types/actions.js").ActivityEvent[];
+    /**
      * Check if the service is currently watching for events
      */
     isStarted(): boolean;

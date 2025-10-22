@@ -128,8 +128,9 @@ export function activityReducer(state, action) {
         case 'ACTIVITY_NOTIFICATION': {
             const { payload } = action;
             const session = state.sessions.get(payload.session_id);
-            if (!session || session.status === 'ended')
+            if (!session)
                 return state;
+            // Re-activate ended sessions when new activity comes in
             const newSessions = new Map(state.sessions);
             newSessions.set(payload.session_id, {
                 ...session,
@@ -137,6 +138,7 @@ export function activityReducer(state, action) {
                 status: 'active',
                 awaitingInput: true, // Set awaiting input on notification
                 notificationMessage: payload.notification_message,
+                endTime: undefined, // Clear end time since session is active again
             });
             const newRecentActivity = [payload, ...state.recentActivity].slice(0, 100);
             return {
@@ -156,8 +158,10 @@ export function activityReducer(state, action) {
         case 'ACTIVITY_TOOL_USE': {
             const { payload } = action;
             const session = state.sessions.get(payload.session_id);
-            if (!session || session.status === 'ended')
+            if (!session)
                 return state;
+            // Re-activate ended sessions when new activity comes in
+            // This handles the case where a session ends but is then re-opened
             const newSessions = new Map(state.sessions);
             newSessions.set(payload.session_id, {
                 ...session,
@@ -165,6 +169,7 @@ export function activityReducer(state, action) {
                 status: 'active',
                 awaitingInput: false, // Clear awaiting input on user response or tool use
                 notificationMessage: undefined,
+                endTime: undefined, // Clear end time since session is active again
             });
             const newRecentActivity = [payload, ...state.recentActivity].slice(0, 100);
             return {
@@ -183,8 +188,9 @@ export function activityReducer(state, action) {
         case 'ACTIVITY_STOP': {
             const { payload } = action;
             const session = state.sessions.get(payload.session_id);
-            if (!session || session.status === 'ended')
+            if (!session)
                 return state;
+            // Re-activate ended sessions when new activity comes in
             const newSessions = new Map(state.sessions);
             newSessions.set(payload.session_id, {
                 ...session,
@@ -192,6 +198,7 @@ export function activityReducer(state, action) {
                 status: 'active',
                 awaitingInput: true, // Agent finished responding, now awaiting user input
                 notificationMessage: 'Awaiting user input',
+                endTime: undefined, // Clear end time since session is active again
             });
             const newRecentActivity = [payload, ...state.recentActivity].slice(0, 100);
             return {
@@ -210,13 +217,15 @@ export function activityReducer(state, action) {
         case 'ACTIVITY_SUBAGENT_STOP': {
             const { payload } = action;
             const session = state.sessions.get(payload.session_id);
-            if (!session || session.status === 'ended')
+            if (!session)
                 return state;
+            // Re-activate ended sessions when new activity comes in
             const newSessions = new Map(state.sessions);
             newSessions.set(payload.session_id, {
                 ...session,
                 lastActivityTime: new Date(payload.timestamp),
                 status: 'active',
+                endTime: undefined, // Clear end time since session is active again
             });
             const newRecentActivity = [payload, ...state.recentActivity].slice(0, 100);
             return {
@@ -402,15 +411,17 @@ export class ActivityStore {
      */
     updateSessionActivityFromTranscript(sessionId, timestamp) {
         const session = this.state.sessions.get(sessionId);
-        if (!session || session.status === 'ended')
+        if (!session)
             return;
         // Only update if this timestamp is more recent
+        // This will re-activate ended sessions if their transcript shows recent activity
         if (timestamp > session.lastActivityTime) {
             const newSessions = new Map(this.state.sessions);
             newSessions.set(sessionId, {
                 ...session,
                 lastActivityTime: timestamp,
-                status: 'active', // Mark as active
+                status: 'active', // Mark as active (even if previously ended)
+                endTime: undefined, // Clear end time since there's recent activity
             });
             this.state = {
                 ...this.state,
