@@ -76,8 +76,8 @@ export default function Home(): ReactNode {
   const {siteConfig} = useDocusaurusContext();
   return (
     <Layout
-      title={`Hello from ${siteConfig.title}`}
-      description="Description will go into a meta tag in <head />">
+      title="Agent Tracker - Never lose track of your Claude Code sessions"
+      description="A real-time TUI dashboard for tracking Claude Code sessions. See all your active AI agent sessions, their context, and activity in one clean interface. Never lose a session again.">
       <HomepageHeader />
       <main>
         <HomepageFeatures />
