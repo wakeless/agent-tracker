@@ -43,7 +43,7 @@ export declare class ActivityStore {
     /**
      * Get all sessions, sorted by priority
      * Priority order: awaiting input > active > inactive > ended
-     * Phantom sessions are filtered out by default
+     * Phantom sessions that are duplicates (have phantomOf) are filtered out
      */
     getSessions(): Session[];
     /**

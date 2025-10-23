@@ -84,6 +84,68 @@ function findRealSession(
 }
 
 /**
+ * Create a phantom session when we receive an event for a session that doesn't exist
+ * This makes the system resilient to missing session_start events
+ */
+function createPhantomSession(
+  sessionId: string,
+  timestamp: Date,
+  cwd?: string,
+  transcriptPath?: string,
+  terminal?: any,
+  git?: any
+): Session {
+  return {
+    id: sessionId,
+    cwd: cwd || 'unknown',
+    transcriptPath: transcriptPath || 'unknown',
+    terminal: terminal || {},
+    git: git || {},
+    status: 'active',
+    startTime: timestamp,
+    lastActivityTime: timestamp,
+    awaitingInput: false,
+    isPhantom: true, // Mark as phantom since we're creating it from activity
+    phantomOf: undefined,
+    transcriptBirthtime: undefined,
+    transcriptModifiedTime: undefined,
+  };
+}
+
+/**
+ * Get or create a session, creating a phantom if it doesn't exist
+ * This ensures we never drop events for unknown sessions
+ */
+function getOrCreateSession(
+  state: ActivityState,
+  sessionId: string,
+  timestamp: Date,
+  eventData?: {
+    cwd?: string;
+    transcript_path?: string;
+    terminal?: any;
+    git?: any;
+  }
+): { session: Session; isNew: boolean } {
+  const existing = state.sessions.get(sessionId);
+  if (existing) {
+    return { session: existing, isNew: false };
+  }
+
+  // Create phantom session from available event data
+  const phantom = createPhantomSession(
+    sessionId,
+    timestamp,
+    eventData?.cwd,
+    eventData?.transcript_path,
+    eventData?.terminal,
+    eventData?.git
+  );
+
+  return { session: phantom, isNew: true };
+}
+
+/**
  * Pure Reducer Function
  * Takes current state and action, returns new state
  */
@@ -147,15 +209,26 @@ export function activityReducer(state: ActivityState, action: Action): ActivityS
 
     case 'SESSION_END': {
       const { payload } = action;
-      const session = state.sessions.get(payload.session_id);
+      const timestamp = new Date(payload.timestamp);
 
-      if (!session) return state;
+      // Get or create session (handles missing session_start)
+      const { session, isNew } = getOrCreateSession(state, payload.session_id, timestamp, {
+        cwd: payload.cwd,
+        transcript_path: payload.transcript_path,
+        terminal: payload.terminal,
+        git: payload.git,
+      });
 
       const newSessions = new Map(state.sessions);
       newSessions.set(payload.session_id, {
         ...session,
+        // Update metadata from session_end if we created a phantom or if metadata is unknown
+        cwd: session.cwd === 'unknown' && payload.cwd ? payload.cwd : session.cwd,
+        transcriptPath: session.transcriptPath === 'unknown' && payload.transcript_path ? payload.transcript_path : session.transcriptPath,
+        terminal: Object.keys(session.terminal).length === 0 && payload.terminal ? payload.terminal : session.terminal,
+        git: Object.keys(session.git || {}).length === 0 && payload.git ? payload.git : session.git,
         status: 'ended',
-        endTime: new Date(payload.timestamp),
+        endTime: timestamp,
       });
 
       return {
@@ -173,15 +246,16 @@ export function activityReducer(state: ActivityState, action: Action): ActivityS
 
     case 'ACTIVITY_NOTIFICATION': {
       const { payload } = action;
-      const session = state.sessions.get(payload.session_id);
+      const timestamp = new Date(payload.timestamp);
 
-      if (!session) return state;
+      // Get or create session (handles missing session_start)
+      const { session } = getOrCreateSession(state, payload.session_id, timestamp);
 
       // Re-activate ended sessions when new activity comes in
       const newSessions = new Map(state.sessions);
       newSessions.set(payload.session_id, {
         ...session,
-        lastActivityTime: new Date(payload.timestamp),
+        lastActivityTime: timestamp,
         status: 'active',
         awaitingInput: true, // Set awaiting input on notification
         notificationMessage: payload.notification_message,
@@ -207,16 +281,17 @@ export function activityReducer(state: ActivityState, action: Action): ActivityS
     case 'ACTIVITY_PROMPT_SUBMIT':
     case 'ACTIVITY_TOOL_USE': {
       const { payload } = action;
-      const session = state.sessions.get(payload.session_id);
+      const timestamp = new Date(payload.timestamp);
 
-      if (!session) return state;
+      // Get or create session (handles missing session_start)
+      const { session } = getOrCreateSession(state, payload.session_id, timestamp);
 
       // Re-activate ended sessions when new activity comes in
       // This handles the case where a session ends but is then re-opened
       const newSessions = new Map(state.sessions);
       newSessions.set(payload.session_id, {
         ...session,
-        lastActivityTime: new Date(payload.timestamp),
+        lastActivityTime: timestamp,
         status: 'active',
         awaitingInput: false, // Clear awaiting input on user response or tool use
         notificationMessage: undefined,
@@ -241,15 +316,16 @@ export function activityReducer(state: ActivityState, action: Action): ActivityS
 
     case 'ACTIVITY_STOP': {
       const { payload } = action;
-      const session = state.sessions.get(payload.session_id);
+      const timestamp = new Date(payload.timestamp);
 
-      if (!session) return state;
+      // Get or create session (handles missing session_start)
+      const { session } = getOrCreateSession(state, payload.session_id, timestamp);
 
       // Re-activate ended sessions when new activity comes in
       const newSessions = new Map(state.sessions);
       newSessions.set(payload.session_id, {
         ...session,
-        lastActivityTime: new Date(payload.timestamp),
+        lastActivityTime: timestamp,
         status: 'active',
         awaitingInput: true, // Agent finished responding, now awaiting user input
         notificationMessage: 'Awaiting user input',
@@ -274,15 +350,16 @@ export function activityReducer(state: ActivityState, action: Action): ActivityS
 
     case 'ACTIVITY_SUBAGENT_STOP': {
       const { payload } = action;
-      const session = state.sessions.get(payload.session_id);
+      const timestamp = new Date(payload.timestamp);
 
-      if (!session) return state;
+      // Get or create session (handles missing session_start)
+      const { session } = getOrCreateSession(state, payload.session_id, timestamp);
 
       // Re-activate ended sessions when new activity comes in
       const newSessions = new Map(state.sessions);
       newSessions.set(payload.session_id, {
         ...session,
-        lastActivityTime: new Date(payload.timestamp),
+        lastActivityTime: timestamp,
         status: 'active',
         endTime: undefined, // Clear end time since session is active again
       });
@@ -339,15 +416,16 @@ export function activityReducer(state: ActivityState, action: Action): ActivityS
 
     case 'UPDATE_WORK_SUMMARY': {
       const { sessionId, summary } = action.payload;
-      const session = state.sessions.get(sessionId);
+      const timestamp = new Date();
 
-      if (!session) return state;
+      // Get or create session (handles missing session_start)
+      const { session } = getOrCreateSession(state, sessionId, timestamp);
 
       const newSessions = new Map(state.sessions);
       newSessions.set(sessionId, {
         ...session,
         workSummary: summary,
-        lastActivityTime: new Date(), // Update activity time when work summary changes
+        lastActivityTime: timestamp, // Update activity time when work summary changes
       });
 
       return {
@@ -416,12 +494,13 @@ export class ActivityStore {
   /**
    * Get all sessions, sorted by priority
    * Priority order: awaiting input > active > inactive > ended
-   * Phantom sessions are filtered out by default
+   * Phantom sessions that are duplicates (have phantomOf) are filtered out
    */
   getSessions(): Session[] {
     const sessions = Array.from(this.state.sessions.values())
-      // Filter out phantom sessions
-      .filter(session => !session.isPhantom);
+      // Filter out phantom sessions that are duplicates of other sessions
+      // But keep phantom sessions created from activity events (no phantomOf)
+      .filter(session => !session.phantomOf);
 
     return sessions.sort((a, b) => {
       // Awaiting input sessions always at top (highest priority)
