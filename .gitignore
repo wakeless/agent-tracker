@@ -6,3 +6,4 @@ coverage/
 .claude/settings.local.json
 .beads/*.db
 .beads/*.db-*
+.beads/daemon.pid
