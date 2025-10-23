@@ -19,7 +19,24 @@ function HomepageHeader() {
         <p className="hero__subtitle">
           So I built a dashboard to track them all
         </p>
-        <div style={{marginTop: '2rem', maxWidth: '700px', margin: '2rem auto'}}>
+        <div style={{marginTop: '2rem', maxWidth: '900px', margin: '2rem auto'}}>
+          <div style={{marginBottom: '2rem'}}>
+            <video
+              autoPlay
+              loop
+              muted
+              playsInline
+              style={{
+                width: '100%',
+                maxWidth: '800px',
+                borderRadius: '8px',
+                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+              }}
+            >
+              <source src="/video/demo.mp4" type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
+          </div>
           <p style={{fontSize: '1.1rem', lineHeight: '1.6'}}>
             You know that feeling when you've got 5 Claude Code sessions scattered across
             different terminals and tabs? Some running, some suspended with Ctrl+Z, some you
