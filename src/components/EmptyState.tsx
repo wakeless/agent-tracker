@@ -25,20 +25,26 @@ export function EmptyState() {
         </Text>
         <Box marginTop={1} marginLeft={2} flexDirection="column">
           <Text>
-            1. Add the plugin marketplace (run this in a Claude Code session):
+            1. Add the plugin marketplace (in a Claude Code session or terminal):
           </Text>
-          <Box marginLeft={3} marginTop={0} marginBottom={1}>
+          <Box marginLeft={3} marginTop={0} marginBottom={1} flexDirection="column">
             <Text color="yellow">
-              /plugin marketplace add /path/to/agent-tracker
+              /plugin marketplace add wakeless/agent-tracker
+            </Text>
+            <Text dimColor>
+              or: claude plugin marketplace add wakeless/agent-tracker
             </Text>
           </Box>
 
           <Text>
             2. Install the agent-tracker plugin:
           </Text>
-          <Box marginLeft={3} marginTop={0} marginBottom={1}>
+          <Box marginLeft={3} marginTop={0} marginBottom={1} flexDirection="column">
             <Text color="yellow">
               /plugin install agent-tracker
+            </Text>
+            <Text dimColor>
+              or: claude plugin install agent-tracker
             </Text>
           </Box>
 
