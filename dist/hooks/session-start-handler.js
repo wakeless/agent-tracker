@@ -121,6 +121,7 @@ function getTerminalInfo() {
         tty,
         term: getEnv('TERM'),
         shell: getEnv('SHELL'),
+        pid: process.pid.toString(),
         ppid: getEnv('PPID'),
         term_program: getEnv('TERM_PROGRAM'),
         term_session_id: getEnv('TERM_SESSION_ID'),

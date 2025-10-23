@@ -1,5 +1,7 @@
 This is a TypeScript CLI TUI written using Ink (React for CLIs).
 
+**Note**: This project uses [bd (beads)](https://github.com/steveyegge/beads) for issue tracking. Use `bd` commands instead of markdown TODOs. See AGENTS.md for workflow details.
+
 ## Quick Start: Debugging Agent Tracker
 
 If you're debugging Agent Tracker issues (sessions not showing, incorrect states, etc.), use the debug skill:

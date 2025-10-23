@@ -9,6 +9,24 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 // ============================================================================
+// Process Information
+// ============================================================================
+/**
+ * Get environment variable with default
+ */
+function getEnv(name, defaultValue = 'unknown') {
+    return process.env[name] || defaultValue;
+}
+/**
+ * Get current process information
+ */
+function getProcessInfo() {
+    return {
+        pid: process.pid.toString(),
+        ppid: getEnv('PPID')
+    };
+}
+// ============================================================================
 // Activity Type Mapping
 // ============================================================================
 /**
@@ -43,7 +61,8 @@ export function handleActivity(hookInput) {
         activity_type: activityType,
         session_id: hookInput.session_id || 'unknown',
         timestamp,
-        hook_event_name: hookEventName
+        hook_event_name: hookEventName,
+        process: getProcessInfo()
     };
     // Add tool name for tool_use events
     if (activityType === 'tool_use' && hookInput.tool_name) {

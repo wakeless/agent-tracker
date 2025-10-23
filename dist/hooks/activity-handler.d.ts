@@ -13,6 +13,10 @@ interface HookInput {
     tool_input?: Record<string, unknown>;
     [key: string]: unknown;
 }
+interface ProcessInfo {
+    pid: string;
+    ppid: string;
+}
 interface ActivityEvent {
     event_type: 'activity';
     activity_type: string;
@@ -22,6 +26,7 @@ interface ActivityEvent {
     tool_input?: Record<string, unknown>;
     notification_message?: string;
     hook_event_name: string;
+    process?: ProcessInfo;
 }
 /**
  * Process activity event

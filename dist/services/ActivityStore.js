@@ -81,10 +81,6 @@ function createPhantomSession(sessionId, timestamp, cwd, transcriptPath, termina
  */
 function getOrCreateSession(state, sessionId, timestamp, eventData) {
     const existing = state.sessions.get(sessionId);
-    // If session exists but is a duplicate phantom, skip processing this event
-    if (existing?.phantomOf) {
-        return { session: existing, isNew: false, shouldSkip: true };
-    }
     if (existing) {
         return { session: existing, isNew: false };
     }
@@ -109,20 +105,6 @@ export function activityReducer(state, action) {
             let phantomOf;
             if (isPhantom) {
                 phantomOf = findRealSession(payload.session_id, startTime, payload.cwd, state.sessions);
-            }
-            // If this is a duplicate phantom (has phantomOf), don't create it
-            // All future events for this session ID will be ignored
-            if (phantomOf) {
-                return {
-                    ...state,
-                    stats: {
-                        totalEvents: state.stats.totalEvents + 1,
-                        eventsByType: {
-                            ...state.stats.eventsByType,
-                            SESSION_START: (state.stats.eventsByType.SESSION_START || 0) + 1,
-                        },
-                    },
-                };
             }
             const newSession = {
                 id: payload.session_id,
@@ -158,25 +140,12 @@ export function activityReducer(state, action) {
             const { payload } = action;
             const timestamp = new Date(payload.timestamp);
             // Get or create session (handles missing session_start)
-            const { session, isNew, shouldSkip } = getOrCreateSession(state, payload.session_id, timestamp, {
+            const { session, isNew } = getOrCreateSession(state, payload.session_id, timestamp, {
                 cwd: payload.cwd,
                 transcript_path: payload.transcript_path,
                 terminal: payload.terminal,
                 git: payload.git,
             });
-            // Skip events for duplicate phantom sessions
-            if (shouldSkip) {
-                return {
-                    ...state,
-                    stats: {
-                        totalEvents: state.stats.totalEvents + 1,
-                        eventsByType: {
-                            ...state.stats.eventsByType,
-                            SESSION_END: (state.stats.eventsByType.SESSION_END || 0) + 1,
-                        },
-                    },
-                };
-            }
             const newSessions = new Map(state.sessions);
             newSessions.set(payload.session_id, {
                 ...session,
@@ -204,20 +173,7 @@ export function activityReducer(state, action) {
             const { payload } = action;
             const timestamp = new Date(payload.timestamp);
             // Get or create session (handles missing session_start)
-            const { session, shouldSkip } = getOrCreateSession(state, payload.session_id, timestamp);
-            // Skip events for duplicate phantom sessions
-            if (shouldSkip) {
-                return {
-                    ...state,
-                    stats: {
-                        totalEvents: state.stats.totalEvents + 1,
-                        eventsByType: {
-                            ...state.stats.eventsByType,
-                            [action.type]: (state.stats.eventsByType[action.type] || 0) + 1,
-                        },
-                    },
-                };
-            }
+            const { session } = getOrCreateSession(state, payload.session_id, timestamp);
             // Re-activate ended sessions when new activity comes in
             const newSessions = new Map(state.sessions);
             newSessions.set(payload.session_id, {
@@ -247,20 +203,7 @@ export function activityReducer(state, action) {
             const { payload } = action;
             const timestamp = new Date(payload.timestamp);
             // Get or create session (handles missing session_start)
-            const { session, shouldSkip } = getOrCreateSession(state, payload.session_id, timestamp);
-            // Skip events for duplicate phantom sessions
-            if (shouldSkip) {
-                return {
-                    ...state,
-                    stats: {
-                        totalEvents: state.stats.totalEvents + 1,
-                        eventsByType: {
-                            ...state.stats.eventsByType,
-                            [action.type]: (state.stats.eventsByType[action.type] || 0) + 1,
-                        },
-                    },
-                };
-            }
+            const { session } = getOrCreateSession(state, payload.session_id, timestamp);
             // Re-activate ended sessions when new activity comes in
             // This handles the case where a session ends but is then re-opened
             const newSessions = new Map(state.sessions);
@@ -290,20 +233,7 @@ export function activityReducer(state, action) {
             const { payload } = action;
             const timestamp = new Date(payload.timestamp);
             // Get or create session (handles missing session_start)
-            const { session, shouldSkip } = getOrCreateSession(state, payload.session_id, timestamp);
-            // Skip events for duplicate phantom sessions
-            if (shouldSkip) {
-                return {
-                    ...state,
-                    stats: {
-                        totalEvents: state.stats.totalEvents + 1,
-                        eventsByType: {
-                            ...state.stats.eventsByType,
-                            [action.type]: (state.stats.eventsByType[action.type] || 0) + 1,
-                        },
-                    },
-                };
-            }
+            const { session } = getOrCreateSession(state, payload.session_id, timestamp);
             // Re-activate ended sessions when new activity comes in
             const newSessions = new Map(state.sessions);
             newSessions.set(payload.session_id, {
@@ -332,20 +262,7 @@ export function activityReducer(state, action) {
             const { payload } = action;
             const timestamp = new Date(payload.timestamp);
             // Get or create session (handles missing session_start)
-            const { session, shouldSkip } = getOrCreateSession(state, payload.session_id, timestamp);
-            // Skip events for duplicate phantom sessions
-            if (shouldSkip) {
-                return {
-                    ...state,
-                    stats: {
-                        totalEvents: state.stats.totalEvents + 1,
-                        eventsByType: {
-                            ...state.stats.eventsByType,
-                            [action.type]: (state.stats.eventsByType[action.type] || 0) + 1,
-                        },
-                    },
-                };
-            }
+            const { session } = getOrCreateSession(state, payload.session_id, timestamp);
             // Re-activate ended sessions when new activity comes in
             const newSessions = new Map(state.sessions);
             newSessions.set(payload.session_id, {
@@ -405,11 +322,7 @@ export function activityReducer(state, action) {
             const { sessionId, summary } = action.payload;
             const timestamp = new Date();
             // Get or create session (handles missing session_start)
-            const { session, shouldSkip } = getOrCreateSession(state, sessionId, timestamp);
-            // Skip events for duplicate phantom sessions
-            if (shouldSkip) {
-                return state;
-            }
+            const { session } = getOrCreateSession(state, sessionId, timestamp);
             const newSessions = new Map(state.sessions);
             newSessions.set(sessionId, {
                 ...session,
@@ -506,12 +419,7 @@ export class ActivityStore {
         let inactive = 0;
         let ended = 0;
         let awaitingInput = 0;
-        let total = 0;
         for (const session of this.state.sessions.values()) {
-            // Skip duplicate phantoms from counts
-            if (session.phantomOf)
-                continue;
-            total++;
             if (session.awaitingInput)
                 awaitingInput++;
             if (session.status === 'active')
@@ -521,7 +429,7 @@ export class ActivityStore {
             else if (session.status === 'ended')
                 ended++;
         }
-        return { active, inactive, ended, awaitingInput, total };
+        return { active, inactive, ended, awaitingInput, total: this.state.sessions.size };
     }
     /**
      * Get recent activity events
