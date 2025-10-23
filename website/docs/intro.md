@@ -4,6 +4,10 @@ sidebar_position: 1
 
 # Getting Started
 
+:::warning Alpha Software
+Agent Tracker is currently in **alpha**. Features may change, and you might encounter bugs. Please [report issues](https://github.com/wakeless/agent-tracker/issues) if you find any!
+:::
+
 Welcome to **Agent Tracker**! A CLI TUI tool for tracking and monitoring active AI agent sessions in real-time.
 
 ## What is Agent Tracker?
