@@ -21,18 +21,22 @@ function HomepageHeader() {
         <p className="hero__subtitle">
           So I built a dashboard to track them all
         </p>
-        <div style={{marginTop: '2rem', maxWidth: '900px', margin: '2rem auto'}}>
-          <div style={{marginBottom: '2rem'}}>
+        <div style={{marginTop: '2rem', maxWidth: '1200px', margin: '2rem auto'}}>
+          <div style={{marginBottom: '2rem', position: 'relative'}}>
             <video
+              controls
               autoPlay
               loop
               muted
               playsInline
+              controlsList="nodownload"
               style={{
                 width: '100%',
-                maxWidth: '800px',
+                maxWidth: '1100px',
                 borderRadius: '8px',
-                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+                display: 'block',
+                margin: '0 auto'
               }}
             >
               <source src={videoUrl} type="video/mp4" />

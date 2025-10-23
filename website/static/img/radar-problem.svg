@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 200">
+  <!-- The Problem: Lost sessions scattered everywhere -->
+
+  <!-- Multiple scattered terminal windows (messy) -->
+  <g opacity="0.7">
+    <!-- Terminal 1 - tilted -->
+    <rect x="20" y="40" width="60" height="45" rx="3" fill="#2d2d2d" stroke="#555" stroke-width="1.5" transform="rotate(-15 50 62)"/>
+    <rect x="20" y="40" width="60" height="8" rx="3" fill="#444" transform="rotate(-15 50 44)"/>
+    <circle cx="45" cy="46" r="1.5" fill="#ff6b6b" transform="rotate(-15 50 44)"/>
+    <circle cx="50" cy="46" r="1.5" fill="#ffe66d" transform="rotate(-15 50 44)"/>
+    <circle cx="55" cy="46" r="1.5" fill="#4ecdc4" transform="rotate(-15 50 44)"/>
+
+    <!-- Terminal 2 - way off to the side -->
+    <rect x="220" y="30" width="60" height="45" rx="3" fill="#2d2d2d" stroke="#555" stroke-width="1.5" transform="rotate(10 250 52)"/>
+    <rect x="220" y="30" width="60" height="8" rx="3" fill="#444" transform="rotate(10 250 34)"/>
+    <circle cx="245" cy="36" r="1.5" fill="#ff6b6b" transform="rotate(10 250 34)"/>
+    <circle cx="250" cy="36" r="1.5" fill="#ffe66d" transform="rotate(10 250 34)"/>
+    <circle cx="255" cy="36" r="1.5" fill="#4ecdc4" transform="rotate(10 250 34)"/>
+
+    <!-- Terminal 3 - hidden in background -->
+    <rect x="100" y="120" width="60" height="45" rx="3" fill="#2d2d2d" stroke="#555" stroke-width="1.5" opacity="0.5"/>
+    <rect x="100" y="120" width="60" height="8" rx="3" fill="#444" opacity="0.5"/>
+
+    <!-- Terminal 4 - partially off screen -->
+    <rect x="-15" y="130" width="60" height="45" rx="3" fill="#2d2d2d" stroke="#555" stroke-width="1.5" transform="rotate(-8 15 152)"/>
+    <rect x="-15" y="130" width="60" height="8" rx="3" fill="#444" transform="rotate(-8 15 134)"/>
+  </g>
+
+  <!-- Question marks indicating confusion -->
+  <text x="150" y="100" font-size="40" fill="#ff6b6b" opacity="0.6" font-family="Arial, sans-serif" text-anchor="middle" font-weight="bold">?</text>
+  <text x="140" y="140" font-size="28" fill="#ff6b6b" opacity="0.4" font-family="Arial, sans-serif" text-anchor="middle" font-weight="bold">?</text>
+  <text x="165" y="130" font-size="32" fill="#ff6b6b" opacity="0.5" font-family="Arial, sans-serif" text-anchor="middle" font-weight="bold">?</text>
+
+  <!-- Person looking confused -->
+  <g transform="translate(135, 155)">
+    <circle cx="0" cy="-10" r="8" fill="#666"/>
+    <path d="M -6 0 L -6 18 L -10 28" stroke="#666" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <path d="M 6 0 L 6 18 L 10 28" stroke="#666" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <path d="M 0 5 L 0 18" stroke="#666" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <path d="M 0 9 L -8 14" stroke="#666" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    <path d="M 0 9 L 8 14" stroke="#666" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+  </g>
+</svg>

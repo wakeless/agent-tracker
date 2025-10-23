@@ -12,7 +12,7 @@ type FeatureItem = {
 const FeatureList: FeatureItem[] = [
   {
     title: 'The Problem',
-    Svg: require('@site/static/img/undraw_docusaurus_mountain.svg').default,
+    Svg: require('@site/static/img/radar-problem.svg').default,
     description: (
       <>
         Claude Code windows get buried in tabs, suspended with Ctrl+Z, or hidden in background terminals.
@@ -22,7 +22,7 @@ const FeatureList: FeatureItem[] = [
   },
   {
     title: 'The Solution',
-    Svg: require('@site/static/img/undraw_docusaurus_tree.svg').default,
+    Svg: require('@site/static/img/radar-solution.svg').default,
     description: (
       <>
         A live dashboard showing every Claude session with context: which project, which terminal,
@@ -32,7 +32,7 @@ const FeatureList: FeatureItem[] = [
   },
   {
     title: 'How It Works',
-    Svg: require('@site/static/img/undraw_docusaurus_react.svg').default,
+    Svg: require('@site/static/img/radar-how-it-works.svg').default,
     description: (
       <>
         Uses Claude's plugin hooks to capture sessions as they start/end and track their activity.
