@@ -147,9 +147,25 @@ function SessionDetails({ session }: { session: Session }) {
 
       <DetailCard title="Transcript">
         <div style={{ fontSize: '14px' }}>
-          <code style={{ wordBreak: 'break-all', color: '#8b949e' }}>
+          <code style={{ wordBreak: 'break-all', color: '#8b949e', display: 'block', marginBottom: '12px' }}>
             {session.transcriptPath}
           </code>
+          <Link
+            to="/sessions/$sessionId/transcript"
+            params={{ sessionId: session.id }}
+            style={{
+              display: 'inline-block',
+              padding: '8px 16px',
+              background: '#238636',
+              color: '#ffffff',
+              borderRadius: '6px',
+              textDecoration: 'none',
+              fontSize: '14px',
+              fontWeight: 500,
+            }}
+          >
+            View Transcript
+          </Link>
         </div>
       </DetailCard>
     </div>

@@ -1,5 +1,5 @@
 import { createServerFn } from '@tanstack/react-start';
-import { ExploreTrackerService, Session, SessionCounts } from '@agent-tracker/core';
+import { ExploreTrackerService, Session, SessionCounts, TranscriptReader, ParsedTranscriptEntry } from '@agent-tracker/core';
 
 // Singleton service instance for the server
 let service: ExploreTrackerService | null = null;
@@ -42,4 +42,29 @@ export const getSession = createServerFn({ method: 'GET' })
     const session = sessions.find((s) => s.id === id) || null;
 
     return { session };
+  });
+
+export interface TranscriptResponse {
+  entries: ParsedTranscriptEntry[];
+  total: number;
+}
+
+export const getTranscript = createServerFn({ method: 'GET' })
+  .validator((transcriptPath: string) => transcriptPath)
+  .handler(async ({ data: transcriptPath }): Promise<TranscriptResponse> => {
+    try {
+      const reader = new TranscriptReader();
+      const entries = await reader.readTranscript(transcriptPath);
+
+      return {
+        entries,
+        total: entries.length,
+      };
+    } catch (error) {
+      // Return empty for missing transcripts (new sessions)
+      return {
+        entries: [],
+        total: 0,
+      };
+    }
   });
