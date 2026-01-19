@@ -58,35 +58,7 @@ function SessionDetailPage() {
 
       <SessionHeader session={session} />
 
-      <div style={{
-        display: 'grid',
-        gap: '16px',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-        marginBottom: '24px',
-      }}>
-        <DetailCard title="Working Directory">
-          <code style={{ wordBreak: 'break-all', fontSize: '13px' }}>{session.cwd}</code>
-        </DetailCard>
-
-        {session.git?.branch && (
-          <DetailCard title="Git">
-            <span style={{ color: '#58a6ff' }}>{session.git.branch}</span>
-          </DetailCard>
-        )}
-
-        <DetailCard title="Timestamps">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '13px' }}>
-            <div>
-              <span style={{ color: '#8b949e' }}>Started: </span>
-              {formatDate(session.startTime)}
-            </div>
-            <div>
-              <span style={{ color: '#8b949e' }}>Last: </span>
-              {formatDate(session.lastActivityTime)}
-            </div>
-          </div>
-        </DetailCard>
-      </div>
+      <SessionDetails session={session} />
 
       <HighlightsSection entries={transcriptData?.entries || []} />
 
@@ -148,6 +120,75 @@ function SessionHeader({ session }: { session: Session }) {
       <p style={{ color: '#6e7681', fontSize: '12px' }}>
         {session.id}
       </p>
+    </div>
+  );
+}
+
+function SessionDetails({ session }: { session: Session }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  return (
+    <div style={{ marginBottom: '16px' }}>
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px',
+          background: 'none',
+          border: 'none',
+          color: '#6e7681',
+          fontSize: '13px',
+          cursor: 'pointer',
+          padding: '4px 0',
+        }}
+      >
+        <span style={{ fontSize: '10px' }}>{isExpanded ? '▼' : '▶'}</span>
+        Session Details
+      </button>
+
+      {isExpanded && (
+        <div style={{
+          display: 'grid',
+          gap: '12px',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+          marginTop: '8px',
+          padding: '12px',
+          background: '#161b22',
+          borderRadius: '8px',
+          border: '1px solid #30363d',
+        }}>
+          <div>
+            <div style={{ fontSize: '11px', color: '#6e7681', marginBottom: '4px', textTransform: 'uppercase' }}>
+              Working Directory
+            </div>
+            <code style={{ wordBreak: 'break-all', fontSize: '12px', color: '#c9d1d9' }}>{session.cwd}</code>
+          </div>
+
+          {session.git?.branch && (
+            <div>
+              <div style={{ fontSize: '11px', color: '#6e7681', marginBottom: '4px', textTransform: 'uppercase' }}>
+                Git Branch
+              </div>
+              <span style={{ color: '#58a6ff', fontSize: '13px' }}>{session.git.branch}</span>
+            </div>
+          )}
+
+          <div>
+            <div style={{ fontSize: '11px', color: '#6e7681', marginBottom: '4px', textTransform: 'uppercase' }}>
+              Started
+            </div>
+            <span style={{ fontSize: '13px', color: '#c9d1d9' }}>{formatDate(session.startTime)}</span>
+          </div>
+
+          <div>
+            <div style={{ fontSize: '11px', color: '#6e7681', marginBottom: '4px', textTransform: 'uppercase' }}>
+              Last Activity
+            </div>
+            <span style={{ fontSize: '13px', color: '#c9d1d9' }}>{formatDate(session.lastActivityTime)}</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -490,31 +531,6 @@ function TranscriptEntry({ entry }: { entry: ParsedTranscriptEntry }) {
           {hasMore && !isExpanded && <span style={{ color: '#6e7681' }}>...</span>}
         </pre>
       )}
-    </div>
-  );
-}
-
-function DetailCard({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div style={{
-      padding: '12px 16px',
-      background: '#161b22',
-      borderRadius: '8px',
-      border: '1px solid #30363d',
-    }}>
-      <h3 style={{
-        fontSize: '11px',
-        fontWeight: 500,
-        color: '#6e7681',
-        marginBottom: '6px',
-        textTransform: 'uppercase',
-        letterSpacing: '0.5px',
-      }}>
-        {title}
-      </h3>
-      <div style={{ color: '#c9d1d9' }}>
-        {children}
-      </div>
     </div>
   );
 }
