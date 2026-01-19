@@ -40,7 +40,6 @@ export interface TerminalInfo {
     tty: string;
     term: string;
     shell: string;
-    pid?: string;
     ppid: string;
     term_program: string;
     term_session_id: string;

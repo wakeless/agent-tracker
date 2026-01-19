@@ -1,26 +1,40 @@
 import React, { useEffect, useMemo, useCallback, useRef } from 'react';
 import { useInput } from 'ink';
 import { SessionTrackerService } from './services/SessionTrackerService.js';
+import { ExploreTrackerService } from './services/ExploreTrackerService.js';
 import { useSessionTracker } from './hooks/useSessionTracker.js';
 import { SessionListView } from './components/SessionListView.js';
 import { TranscriptViewer } from './components/TranscriptViewer.js';
 import { ToolDetailView } from './components/ToolDetailView.js';
+import { PlanDetailView } from './components/PlanDetailView.js';
+import { EditDetailView } from './components/EditDetailView.js';
+import { WriteDetailView } from './components/WriteDetailView.js';
+import { BashDetailView } from './components/BashDetailView.js';
+import { GrepDetailView } from './components/GrepDetailView.js';
 import { EmptyState } from './components/EmptyState.js';
 import { TranscriptReader } from './services/TranscriptReader.js';
 import { useNavigation } from './hooks/useNavigation.js';
 import { homedir } from 'os';
 import { join } from 'path';
-export function App({ eventsFilePath } = {}) {
-    // Create SessionTrackerService instance once using useRef for stability
+export function App({ eventsFilePath, exploreMode = false } = {}) {
+    // Create tracker service instance once using useRef for stability
     // This ensures the service instance is the same across all re-renders
     const serviceRef = useRef(null);
     if (!serviceRef.current) {
-        // Default to ~/.agent-tracker/sessions.jsonl if not specified
-        const defaultPath = join(homedir(), '.agent-tracker', 'sessions.jsonl');
-        serviceRef.current = new SessionTrackerService({
-            eventsFilePath: eventsFilePath || defaultPath,
-            enableLogging: false,
-        });
+        if (exploreMode) {
+            // Explore mode: discover sessions from ~/.claude/projects/
+            serviceRef.current = new ExploreTrackerService({
+                enableLogging: false,
+            });
+        }
+        else {
+            // Default mode: watch events file for hook-generated events
+            const defaultPath = join(homedir(), '.agent-tracker', 'sessions.jsonl');
+            serviceRef.current = new SessionTrackerService({
+                eventsFilePath: eventsFilePath || defaultPath,
+                enableLogging: false,
+            });
+        }
     }
     const service = serviceRef.current;
     // Use the hook to subscribe to session updates
@@ -104,6 +118,31 @@ export function App({ eventsFilePath } = {}) {
             navigation.pushToolDetail(transcriptSession.id, toolEntry.uuid, allEntries);
         }
     }, [navigation, transcriptSession?.id]);
+    const handleShowPlanDetail = useCallback((planEntryUuid, plan, allowedPrompts) => {
+        if (transcriptSession) {
+            navigation.pushPlanDetail(transcriptSession.id, planEntryUuid, plan, allowedPrompts);
+        }
+    }, [navigation, transcriptSession?.id]);
+    const handleShowEditDetail = useCallback((editEntryUuid, editInput) => {
+        if (transcriptSession) {
+            navigation.pushEditDetail(transcriptSession.id, editEntryUuid, editInput);
+        }
+    }, [navigation, transcriptSession?.id]);
+    const handleShowWriteDetail = useCallback((writeEntryUuid, writeInput) => {
+        if (transcriptSession) {
+            navigation.pushWriteDetail(transcriptSession.id, writeEntryUuid, writeInput);
+        }
+    }, [navigation, transcriptSession?.id]);
+    const handleShowBashDetail = useCallback((bashEntryUuid, bashInput, toolResult) => {
+        if (transcriptSession) {
+            navigation.pushBashDetail(transcriptSession.id, bashEntryUuid, bashInput, toolResult);
+        }
+    }, [navigation, transcriptSession?.id]);
+    const handleShowGrepDetail = useCallback((grepEntryUuid, grepInput, toolResult) => {
+        if (transcriptSession) {
+            navigation.pushGrepDetail(transcriptSession.id, grepEntryUuid, grepInput, toolResult);
+        }
+    }, [navigation, transcriptSession?.id]);
     // Render based on current view in navigation stack
     switch (currentView.type) {
         case 'list': {
@@ -125,7 +164,7 @@ export function App({ eventsFilePath } = {}) {
                 return null;
             }
             const transcriptView = currentView;
-            return (React.createElement(TranscriptViewer, { key: stableTranscriptSession.id, transcriptPath: stableTranscriptSession.transcriptPath, sessionId: stableTranscriptSession.id, session: stableTranscriptSession, onShowToolDetail: handleShowToolDetail, initialSelectedUuid: transcriptView.selectedUuid, onSelectionChange: navigation.updateTranscriptPosition }));
+            return (React.createElement(TranscriptViewer, { key: stableTranscriptSession.id, transcriptPath: stableTranscriptSession.transcriptPath, sessionId: stableTranscriptSession.id, session: stableTranscriptSession, onShowToolDetail: handleShowToolDetail, onShowPlanDetail: handleShowPlanDetail, onShowEditDetail: handleShowEditDetail, onShowWriteDetail: handleShowWriteDetail, onShowBashDetail: handleShowBashDetail, onShowGrepDetail: handleShowGrepDetail, initialSelectedUuid: transcriptView.selectedUuid, onSelectionChange: navigation.updateTranscriptPosition }));
         }
         case 'tool-detail': {
             // Type assertion since we're in the tool-detail case
@@ -139,6 +178,26 @@ export function App({ eventsFilePath } = {}) {
                 return null;
             }
             return React.createElement(ToolDetailView, { toolUseEntry: toolUseEntry, toolResultEntry: toolResultEntry });
+        }
+        case 'plan-detail': {
+            const planDetailView = currentView;
+            return (React.createElement(PlanDetailView, { plan: planDetailView.plan, allowedPrompts: planDetailView.allowedPrompts }));
+        }
+        case 'edit-detail': {
+            const editDetailView = currentView;
+            return React.createElement(EditDetailView, { editInput: editDetailView.editInput });
+        }
+        case 'write-detail': {
+            const writeDetailView = currentView;
+            return React.createElement(WriteDetailView, { writeInput: writeDetailView.writeInput });
+        }
+        case 'bash-detail': {
+            const bashDetailView = currentView;
+            return (React.createElement(BashDetailView, { bashInput: bashDetailView.bashInput, toolResult: bashDetailView.toolResult }));
+        }
+        case 'grep-detail': {
+            const grepDetailView = currentView;
+            return (React.createElement(GrepDetailView, { grepInput: grepDetailView.grepInput, toolResult: grepDetailView.toolResult }));
         }
         default:
             // Should never happen due to TypeScript exhaustiveness checking

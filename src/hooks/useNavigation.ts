@@ -1,5 +1,6 @@
 import { useReducer, useCallback, useMemo } from 'react';
 import { ParsedTranscriptEntry } from '../types/transcript.js';
+import { EditInput, WriteInput, BashInput, GrepInput } from '../components/tools/ToolDisplayProps.js';
 
 /**
  * Navigation Stack Items
@@ -8,6 +9,8 @@ import { ParsedTranscriptEntry } from '../types/transcript.js';
  * - list: Session list view (depth 0)
  * - transcript: Transcript viewer for a session (depth 1)
  * - tool-detail: Tool use/result detail view (depth 2)
+ * - edit-detail: Edit tool detail view (depth 2)
+ * - write-detail: Write tool detail view (depth 2)
  */
 export type NavStackItem =
   | {
@@ -24,6 +27,39 @@ export type NavStackItem =
       sessionId: string;
       toolEntryUuid: string;
       allTranscriptEntries: ParsedTranscriptEntry[];
+    }
+  | {
+      type: 'plan-detail';
+      sessionId: string;
+      planEntryUuid: string;
+      plan: string;
+      allowedPrompts?: Array<{ tool: string; prompt: string }>;
+    }
+  | {
+      type: 'edit-detail';
+      sessionId: string;
+      editEntryUuid: string;
+      editInput: EditInput;
+    }
+  | {
+      type: 'write-detail';
+      sessionId: string;
+      writeEntryUuid: string;
+      writeInput: WriteInput;
+    }
+  | {
+      type: 'bash-detail';
+      sessionId: string;
+      bashEntryUuid: string;
+      bashInput: BashInput;
+      toolResult: ParsedTranscriptEntry | null;
+    }
+  | {
+      type: 'grep-detail';
+      sessionId: string;
+      grepEntryUuid: string;
+      grepInput: GrepInput;
+      toolResult: ParsedTranscriptEntry | null;
     };
 
 /**
@@ -47,6 +83,39 @@ export type NavAction =
       sessionId: string;
       toolEntryUuid: string;
       allTranscriptEntries: ParsedTranscriptEntry[];
+    }
+  | {
+      type: 'PUSH_PLAN_DETAIL';
+      sessionId: string;
+      planEntryUuid: string;
+      plan: string;
+      allowedPrompts?: Array<{ tool: string; prompt: string }>;
+    }
+  | {
+      type: 'PUSH_EDIT_DETAIL';
+      sessionId: string;
+      editEntryUuid: string;
+      editInput: EditInput;
+    }
+  | {
+      type: 'PUSH_WRITE_DETAIL';
+      sessionId: string;
+      writeEntryUuid: string;
+      writeInput: WriteInput;
+    }
+  | {
+      type: 'PUSH_BASH_DETAIL';
+      sessionId: string;
+      bashEntryUuid: string;
+      bashInput: BashInput;
+      toolResult: ParsedTranscriptEntry | null;
+    }
+  | {
+      type: 'PUSH_GREP_DETAIL';
+      sessionId: string;
+      grepEntryUuid: string;
+      grepInput: GrepInput;
+      toolResult: ParsedTranscriptEntry | null;
     }
 
   // Pop back one level
@@ -84,6 +153,74 @@ export function navigationReducer(state: NavState, action: NavAction): NavState 
             sessionId: action.sessionId,
             toolEntryUuid: action.toolEntryUuid,
             allTranscriptEntries: action.allTranscriptEntries,
+          },
+        ],
+      };
+
+    case 'PUSH_PLAN_DETAIL':
+      return {
+        stack: [
+          ...state.stack,
+          {
+            type: 'plan-detail',
+            sessionId: action.sessionId,
+            planEntryUuid: action.planEntryUuid,
+            plan: action.plan,
+            allowedPrompts: action.allowedPrompts,
+          },
+        ],
+      };
+
+    case 'PUSH_EDIT_DETAIL':
+      return {
+        stack: [
+          ...state.stack,
+          {
+            type: 'edit-detail',
+            sessionId: action.sessionId,
+            editEntryUuid: action.editEntryUuid,
+            editInput: action.editInput,
+          },
+        ],
+      };
+
+    case 'PUSH_WRITE_DETAIL':
+      return {
+        stack: [
+          ...state.stack,
+          {
+            type: 'write-detail',
+            sessionId: action.sessionId,
+            writeEntryUuid: action.writeEntryUuid,
+            writeInput: action.writeInput,
+          },
+        ],
+      };
+
+    case 'PUSH_BASH_DETAIL':
+      return {
+        stack: [
+          ...state.stack,
+          {
+            type: 'bash-detail',
+            sessionId: action.sessionId,
+            bashEntryUuid: action.bashEntryUuid,
+            bashInput: action.bashInput,
+            toolResult: action.toolResult,
+          },
+        ],
+      };
+
+    case 'PUSH_GREP_DETAIL':
+      return {
+        stack: [
+          ...state.stack,
+          {
+            type: 'grep-detail',
+            sessionId: action.sessionId,
+            grepEntryUuid: action.grepEntryUuid,
+            grepInput: action.grepInput,
+            toolResult: action.toolResult,
           },
         ],
       };
@@ -167,6 +304,69 @@ export function useNavigation(initialSessionId: string | null) {
     []
   );
 
+  const pushPlanDetail = useCallback(
+    (
+      sessionId: string,
+      planEntryUuid: string,
+      plan: string,
+      allowedPrompts?: Array<{ tool: string; prompt: string }>
+    ) =>
+      dispatch({
+        type: 'PUSH_PLAN_DETAIL',
+        sessionId,
+        planEntryUuid,
+        plan,
+        allowedPrompts,
+      }),
+    []
+  );
+
+  const pushEditDetail = useCallback(
+    (sessionId: string, editEntryUuid: string, editInput: EditInput) =>
+      dispatch({
+        type: 'PUSH_EDIT_DETAIL',
+        sessionId,
+        editEntryUuid,
+        editInput,
+      }),
+    []
+  );
+
+  const pushWriteDetail = useCallback(
+    (sessionId: string, writeEntryUuid: string, writeInput: WriteInput) =>
+      dispatch({
+        type: 'PUSH_WRITE_DETAIL',
+        sessionId,
+        writeEntryUuid,
+        writeInput,
+      }),
+    []
+  );
+
+  const pushBashDetail = useCallback(
+    (sessionId: string, bashEntryUuid: string, bashInput: BashInput, toolResult: ParsedTranscriptEntry | null) =>
+      dispatch({
+        type: 'PUSH_BASH_DETAIL',
+        sessionId,
+        bashEntryUuid,
+        bashInput,
+        toolResult,
+      }),
+    []
+  );
+
+  const pushGrepDetail = useCallback(
+    (sessionId: string, grepEntryUuid: string, grepInput: GrepInput, toolResult: ParsedTranscriptEntry | null) =>
+      dispatch({
+        type: 'PUSH_GREP_DETAIL',
+        sessionId,
+        grepEntryUuid,
+        grepInput,
+        toolResult,
+      }),
+    []
+  );
+
   const pop = useCallback(() => dispatch({ type: 'POP' }), []);
 
   const updateTranscriptPosition = useCallback(
@@ -187,10 +387,15 @@ export function useNavigation(initialSessionId: string | null) {
       selectSession,
       pushTranscript,
       pushToolDetail,
+      pushPlanDetail,
+      pushEditDetail,
+      pushWriteDetail,
+      pushBashDetail,
+      pushGrepDetail,
       pop,
       updateTranscriptPosition,
     }),
-    [currentView, depth, state.stack, dispatch, selectSession, pushTranscript, pushToolDetail, pop, updateTranscriptPosition]
+    [currentView, depth, state.stack, dispatch, selectSession, pushTranscript, pushToolDetail, pushPlanDetail, pushEditDetail, pushWriteDetail, pushBashDetail, pushGrepDetail, pop, updateTranscriptPosition]
   );
 }
 
@@ -217,4 +422,49 @@ export function isToolDetailView(
   view: NavStackItem
 ): view is Extract<NavStackItem, { type: 'tool-detail' }> {
   return view.type === 'tool-detail';
+}
+
+/**
+ * Type guard to check if current view is plan detail view
+ */
+export function isPlanDetailView(
+  view: NavStackItem
+): view is Extract<NavStackItem, { type: 'plan-detail' }> {
+  return view.type === 'plan-detail';
+}
+
+/**
+ * Type guard to check if current view is edit detail view
+ */
+export function isEditDetailView(
+  view: NavStackItem
+): view is Extract<NavStackItem, { type: 'edit-detail' }> {
+  return view.type === 'edit-detail';
+}
+
+/**
+ * Type guard to check if current view is write detail view
+ */
+export function isWriteDetailView(
+  view: NavStackItem
+): view is Extract<NavStackItem, { type: 'write-detail' }> {
+  return view.type === 'write-detail';
+}
+
+/**
+ * Type guard to check if current view is bash detail view
+ */
+export function isBashDetailView(
+  view: NavStackItem
+): view is Extract<NavStackItem, { type: 'bash-detail' }> {
+  return view.type === 'bash-detail';
+}
+
+/**
+ * Type guard to check if current view is grep detail view
+ */
+export function isGrepDetailView(
+  view: NavStackItem
+): view is Extract<NavStackItem, { type: 'grep-detail' }> {
+  return view.type === 'grep-detail';
 }

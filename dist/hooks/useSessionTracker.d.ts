@@ -1,7 +1,7 @@
 /**
  * useSessionTracker Hook
  *
- * React hook that subscribes to a SessionTrackerService instance and provides
+ * React hook that subscribes to a tracker service instance and provides
  * sessions data to components.
  *
  * This hook ensures:
@@ -9,18 +9,25 @@
  * - Proper subscription/unsubscription lifecycle
  * - Re-renders only when session data changes
  */
-import { SessionTrackerService } from '../services/SessionTrackerService.js';
 import { Session } from '../types/session.js';
+/**
+ * Common interface for tracker services
+ * Both SessionTrackerService and ExploreTrackerService implement this
+ */
+export interface TrackerService {
+    getSessions(): Session[];
+    subscribe(listener: () => void): () => void;
+}
 export interface UseSessionTrackerResult {
     /** All sessions, sorted by priority */
     sessions: Session[];
-    /** The SessionTrackerService instance */
-    service: SessionTrackerService;
+    /** The tracker service instance */
+    service: TrackerService;
 }
 /**
- * Hook to subscribe to SessionTrackerService and get session data
+ * Hook to subscribe to a tracker service and get session data
  *
- * @param service - The SessionTrackerService instance to subscribe to
+ * @param service - The tracker service instance to subscribe to
  * @returns An object containing sessions array and the service instance
  *
  * @example
@@ -41,5 +48,5 @@ export interface UseSessionTrackerResult {
  * }
  * ```
  */
-export declare function useSessionTracker(service: SessionTrackerService): UseSessionTrackerResult;
+export declare function useSessionTracker(service: TrackerService): UseSessionTrackerResult;
 //# sourceMappingURL=useSessionTracker.d.ts.map

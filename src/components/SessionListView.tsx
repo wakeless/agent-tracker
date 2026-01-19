@@ -5,12 +5,24 @@ import { SessionList } from './SessionList.js';
 import { SessionDetail } from './SessionDetail.js';
 import { TranscriptReader } from '../services/TranscriptReader.js';
 import { ParsedTranscriptEntry } from '../types/transcript.js';
-import { SessionTrackerService } from '../services/SessionTrackerService.js';
+
+/**
+ * Common interface for tracker services used in SessionListView
+ */
+interface TrackerService {
+  getSessionCounts(): {
+    total: number;
+    active: number;
+    inactive: number;
+    ended: number;
+    awaitingInput: number;
+  };
+}
 
 interface SessionListViewProps {
   sessions: Session[];
   selectedSessionId: string | null;
-  service: SessionTrackerService;
+  service: TrackerService;
   onSelectSession: (sessionId: string | null) => void;
   onViewTranscript: (sessionId: string) => void;
 }

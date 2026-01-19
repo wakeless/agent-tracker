@@ -13,12 +13,22 @@ import {
   getVisibleEntriesFromState,
   getNewEntriesCount,
 } from '../reducers/transcriptReducer.js';
+import { isExitPlanModeInput, isEditInput, isWriteInput, isBashInput, isGrepInput, EditInput, WriteInput, BashInput, GrepInput } from './tools/ToolDisplayProps.js';
 
 interface TranscriptViewerProps {
   transcriptPath: string;
   sessionId: string;
   session: Session;
   onShowToolDetail?: (toolEntry: ParsedTranscriptEntry, allEntries: ParsedTranscriptEntry[]) => void;
+  onShowPlanDetail?: (
+    planEntryUuid: string,
+    plan: string,
+    allowedPrompts?: Array<{ tool: string; prompt: string }>
+  ) => void;
+  onShowEditDetail?: (editEntryUuid: string, editInput: EditInput) => void;
+  onShowWriteDetail?: (writeEntryUuid: string, writeInput: WriteInput) => void;
+  onShowBashDetail?: (bashEntryUuid: string, bashInput: BashInput, toolResult: ParsedTranscriptEntry | null) => void;
+  onShowGrepDetail?: (grepEntryUuid: string, grepInput: GrepInput, toolResult: ParsedTranscriptEntry | null) => void;
   initialSelectedUuid?: string; // Restore scroll position from navigation stack
   onSelectionChange?: (selectedUuid: string) => void; // Save scroll position to navigation stack
 }
@@ -28,6 +38,11 @@ export function TranscriptViewer({
   sessionId,
   session,
   onShowToolDetail,
+  onShowPlanDetail,
+  onShowEditDetail,
+  onShowWriteDetail,
+  onShowBashDetail,
+  onShowGrepDetail,
   initialSelectedUuid,
   onSelectionChange
 }: TranscriptViewerProps) {
@@ -116,15 +131,73 @@ export function TranscriptViewer({
       dispatch({ type: 'TOGGLE_SYSTEM_ENTRIES' });
     }
     // Show tool detail view on Enter (if on a tool_use entry)
-    else if (key.return && onShowToolDetail) {
+    else if (key.return) {
       const currentEntry = visibleEntries.find((e) => e.uuid === state.selectedUuid);
       if (currentEntry && currentEntry.type === 'tool_use') {
         // Save current position before navigating away
         if (onSelectionChange && state.selectedUuid) {
           onSelectionChange(state.selectedUuid);
         }
-        // Pass all entries (not just visible) so we can find the tool_result
-        onShowToolDetail(currentEntry, state.entries);
+
+        // Check if this is an ExitPlanMode tool - navigate to plan detail
+        if (
+          currentEntry.toolName === 'ExitPlanMode' &&
+          currentEntry.toolInput &&
+          isExitPlanModeInput(currentEntry.toolInput) &&
+          onShowPlanDetail
+        ) {
+          const { plan, allowedPrompts } = currentEntry.toolInput;
+          onShowPlanDetail(currentEntry.uuid, plan, allowedPrompts);
+        }
+        // Check if this is an Edit tool - navigate to edit detail
+        else if (
+          currentEntry.toolName === 'Edit' &&
+          currentEntry.toolInput &&
+          isEditInput(currentEntry.toolInput) &&
+          onShowEditDetail
+        ) {
+          onShowEditDetail(currentEntry.uuid, currentEntry.toolInput);
+        }
+        // Check if this is a Write tool - navigate to write detail
+        else if (
+          currentEntry.toolName === 'Write' &&
+          currentEntry.toolInput &&
+          isWriteInput(currentEntry.toolInput) &&
+          onShowWriteDetail
+        ) {
+          onShowWriteDetail(currentEntry.uuid, currentEntry.toolInput);
+        }
+        // Check if this is a Bash tool - navigate to bash detail
+        else if (
+          currentEntry.toolName === 'Bash' &&
+          currentEntry.toolInput &&
+          isBashInput(currentEntry.toolInput) &&
+          onShowBashDetail
+        ) {
+          // Find the tool result
+          const toolResult = state.entries.find(
+            (e) => e.type === 'tool_result' && e.toolUseId === currentEntry.toolId
+          ) || null;
+          onShowBashDetail(currentEntry.uuid, currentEntry.toolInput, toolResult);
+        }
+        // Check if this is a Grep tool - navigate to grep detail
+        else if (
+          currentEntry.toolName === 'Grep' &&
+          currentEntry.toolInput &&
+          isGrepInput(currentEntry.toolInput) &&
+          onShowGrepDetail
+        ) {
+          // Find the tool result
+          const toolResult = state.entries.find(
+            (e) => e.type === 'tool_result' && e.toolUseId === currentEntry.toolId
+          ) || null;
+          onShowGrepDetail(currentEntry.uuid, currentEntry.toolInput, toolResult);
+        }
+        // Otherwise show generic tool detail
+        else if (onShowToolDetail) {
+          // Pass all entries (not just visible) so we can find the tool_result
+          onShowToolDetail(currentEntry, state.entries);
+        }
       }
     }
   });

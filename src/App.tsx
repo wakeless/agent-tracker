@@ -1,32 +1,50 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useInput } from 'ink';
 import { SessionTrackerService } from './services/SessionTrackerService.js';
+import { ExploreTrackerService } from './services/ExploreTrackerService.js';
 import { useSessionTracker } from './hooks/useSessionTracker.js';
 import { SessionListView } from './components/SessionListView.js';
 import { TranscriptViewer } from './components/TranscriptViewer.js';
 import { ToolDetailView } from './components/ToolDetailView.js';
+import { PlanDetailView } from './components/PlanDetailView.js';
+import { EditDetailView } from './components/EditDetailView.js';
+import { WriteDetailView } from './components/WriteDetailView.js';
+import { BashDetailView } from './components/BashDetailView.js';
+import { GrepDetailView } from './components/GrepDetailView.js';
 import { EmptyState } from './components/EmptyState.js';
 import { TranscriptReader } from './services/TranscriptReader.js';
 import { useNavigation, NavStackItem } from './hooks/useNavigation.js';
 import { ParsedTranscriptEntry } from './types/transcript.js';
+import { EditInput, WriteInput, BashInput, GrepInput } from './components/tools/ToolDisplayProps.js';
 import { homedir } from 'os';
 import { join } from 'path';
 
 export interface AppProps {
   eventsFilePath?: string;
+  exploreMode?: boolean;
 }
 
-export function App({ eventsFilePath }: AppProps = {}) {
-  // Create SessionTrackerService instance once using useRef for stability
+// Common interface for both tracker services
+type TrackerService = SessionTrackerService | ExploreTrackerService;
+
+export function App({ eventsFilePath, exploreMode = false }: AppProps = {}) {
+  // Create tracker service instance once using useRef for stability
   // This ensures the service instance is the same across all re-renders
-  const serviceRef = useRef<SessionTrackerService | null>(null);
+  const serviceRef = useRef<TrackerService | null>(null);
   if (!serviceRef.current) {
-    // Default to ~/.agent-tracker/sessions.jsonl if not specified
-    const defaultPath = join(homedir(), '.agent-tracker', 'sessions.jsonl');
-    serviceRef.current = new SessionTrackerService({
-      eventsFilePath: eventsFilePath || defaultPath,
-      enableLogging: false,
-    });
+    if (exploreMode) {
+      // Explore mode: discover sessions from ~/.claude/projects/
+      serviceRef.current = new ExploreTrackerService({
+        enableLogging: false,
+      });
+    } else {
+      // Default mode: watch events file for hook-generated events
+      const defaultPath = join(homedir(), '.agent-tracker', 'sessions.jsonl');
+      serviceRef.current = new SessionTrackerService({
+        eventsFilePath: eventsFilePath || defaultPath,
+        enableLogging: false,
+      });
+    }
   }
   const service = serviceRef.current;
 
@@ -134,6 +152,55 @@ export function App({ eventsFilePath }: AppProps = {}) {
     [navigation, transcriptSession?.id]
   );
 
+  const handleShowPlanDetail = useCallback(
+    (
+      planEntryUuid: string,
+      plan: string,
+      allowedPrompts?: Array<{ tool: string; prompt: string }>
+    ) => {
+      if (transcriptSession) {
+        navigation.pushPlanDetail(transcriptSession.id, planEntryUuid, plan, allowedPrompts);
+      }
+    },
+    [navigation, transcriptSession?.id]
+  );
+
+  const handleShowEditDetail = useCallback(
+    (editEntryUuid: string, editInput: EditInput) => {
+      if (transcriptSession) {
+        navigation.pushEditDetail(transcriptSession.id, editEntryUuid, editInput);
+      }
+    },
+    [navigation, transcriptSession?.id]
+  );
+
+  const handleShowWriteDetail = useCallback(
+    (writeEntryUuid: string, writeInput: WriteInput) => {
+      if (transcriptSession) {
+        navigation.pushWriteDetail(transcriptSession.id, writeEntryUuid, writeInput);
+      }
+    },
+    [navigation, transcriptSession?.id]
+  );
+
+  const handleShowBashDetail = useCallback(
+    (bashEntryUuid: string, bashInput: BashInput, toolResult: ParsedTranscriptEntry | null) => {
+      if (transcriptSession) {
+        navigation.pushBashDetail(transcriptSession.id, bashEntryUuid, bashInput, toolResult);
+      }
+    },
+    [navigation, transcriptSession?.id]
+  );
+
+  const handleShowGrepDetail = useCallback(
+    (grepEntryUuid: string, grepInput: GrepInput, toolResult: ParsedTranscriptEntry | null) => {
+      if (transcriptSession) {
+        navigation.pushGrepDetail(transcriptSession.id, grepEntryUuid, grepInput, toolResult);
+      }
+    },
+    [navigation, transcriptSession?.id]
+  );
+
   // Render based on current view in navigation stack
   switch (currentView.type) {
     case 'list': {
@@ -175,6 +242,11 @@ export function App({ eventsFilePath }: AppProps = {}) {
           sessionId={stableTranscriptSession.id}
           session={stableTranscriptSession}
           onShowToolDetail={handleShowToolDetail}
+          onShowPlanDetail={handleShowPlanDetail}
+          onShowEditDetail={handleShowEditDetail}
+          onShowWriteDetail={handleShowWriteDetail}
+          onShowBashDetail={handleShowBashDetail}
+          onShowGrepDetail={handleShowGrepDetail}
           initialSelectedUuid={transcriptView.selectedUuid}
           onSelectionChange={navigation.updateTranscriptPosition}
         />
@@ -200,6 +272,46 @@ export function App({ eventsFilePath }: AppProps = {}) {
       }
 
       return <ToolDetailView toolUseEntry={toolUseEntry} toolResultEntry={toolResultEntry} />;
+    }
+
+    case 'plan-detail': {
+      const planDetailView = currentView as Extract<NavStackItem, { type: 'plan-detail' }>;
+      return (
+        <PlanDetailView
+          plan={planDetailView.plan}
+          allowedPrompts={planDetailView.allowedPrompts}
+        />
+      );
+    }
+
+    case 'edit-detail': {
+      const editDetailView = currentView as Extract<NavStackItem, { type: 'edit-detail' }>;
+      return <EditDetailView editInput={editDetailView.editInput} />;
+    }
+
+    case 'write-detail': {
+      const writeDetailView = currentView as Extract<NavStackItem, { type: 'write-detail' }>;
+      return <WriteDetailView writeInput={writeDetailView.writeInput} />;
+    }
+
+    case 'bash-detail': {
+      const bashDetailView = currentView as Extract<NavStackItem, { type: 'bash-detail' }>;
+      return (
+        <BashDetailView
+          bashInput={bashDetailView.bashInput}
+          toolResult={bashDetailView.toolResult}
+        />
+      );
+    }
+
+    case 'grep-detail': {
+      const grepDetailView = currentView as Extract<NavStackItem, { type: 'grep-detail' }>;
+      return (
+        <GrepDetailView
+          grepInput={grepDetailView.grepInput}
+          toolResult={grepDetailView.toolResult}
+        />
+      );
     }
 
     default:

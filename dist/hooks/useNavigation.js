@@ -26,6 +26,69 @@ export function navigationReducer(state, action) {
                     },
                 ],
             };
+        case 'PUSH_PLAN_DETAIL':
+            return {
+                stack: [
+                    ...state.stack,
+                    {
+                        type: 'plan-detail',
+                        sessionId: action.sessionId,
+                        planEntryUuid: action.planEntryUuid,
+                        plan: action.plan,
+                        allowedPrompts: action.allowedPrompts,
+                    },
+                ],
+            };
+        case 'PUSH_EDIT_DETAIL':
+            return {
+                stack: [
+                    ...state.stack,
+                    {
+                        type: 'edit-detail',
+                        sessionId: action.sessionId,
+                        editEntryUuid: action.editEntryUuid,
+                        editInput: action.editInput,
+                    },
+                ],
+            };
+        case 'PUSH_WRITE_DETAIL':
+            return {
+                stack: [
+                    ...state.stack,
+                    {
+                        type: 'write-detail',
+                        sessionId: action.sessionId,
+                        writeEntryUuid: action.writeEntryUuid,
+                        writeInput: action.writeInput,
+                    },
+                ],
+            };
+        case 'PUSH_BASH_DETAIL':
+            return {
+                stack: [
+                    ...state.stack,
+                    {
+                        type: 'bash-detail',
+                        sessionId: action.sessionId,
+                        bashEntryUuid: action.bashEntryUuid,
+                        bashInput: action.bashInput,
+                        toolResult: action.toolResult,
+                    },
+                ],
+            };
+        case 'PUSH_GREP_DETAIL':
+            return {
+                stack: [
+                    ...state.stack,
+                    {
+                        type: 'grep-detail',
+                        sessionId: action.sessionId,
+                        grepEntryUuid: action.grepEntryUuid,
+                        grepInput: action.grepInput,
+                        toolResult: action.toolResult,
+                    },
+                ],
+            };
         case 'POP':
             // Never pop the last item (list view is always at bottom)
             if (state.stack.length <= 1) {
@@ -84,6 +147,39 @@ export function useNavigation(initialSessionId) {
         toolEntryUuid,
         allTranscriptEntries: allEntries,
     }), []);
+    const pushPlanDetail = useCallback((sessionId, planEntryUuid, plan, allowedPrompts) => dispatch({
+        type: 'PUSH_PLAN_DETAIL',
+        sessionId,
+        planEntryUuid,
+        plan,
+        allowedPrompts,
+    }), []);
+    const pushEditDetail = useCallback((sessionId, editEntryUuid, editInput) => dispatch({
+        type: 'PUSH_EDIT_DETAIL',
+        sessionId,
+        editEntryUuid,
+        editInput,
+    }), []);
+    const pushWriteDetail = useCallback((sessionId, writeEntryUuid, writeInput) => dispatch({
+        type: 'PUSH_WRITE_DETAIL',
+        sessionId,
+        writeEntryUuid,
+        writeInput,
+    }), []);
+    const pushBashDetail = useCallback((sessionId, bashEntryUuid, bashInput, toolResult) => dispatch({
+        type: 'PUSH_BASH_DETAIL',
+        sessionId,
+        bashEntryUuid,
+        bashInput,
+        toolResult,
+    }), []);
+    const pushGrepDetail = useCallback((sessionId, grepEntryUuid, grepInput, toolResult) => dispatch({
+        type: 'PUSH_GREP_DETAIL',
+        sessionId,
+        grepEntryUuid,
+        grepInput,
+        toolResult,
+    }), []);
     const pop = useCallback(() => dispatch({ type: 'POP' }), []);
     const updateTranscriptPosition = useCallback((selectedUuid) => dispatch({ type: 'UPDATE_TRANSCRIPT_POSITION', selectedUuid }), []);
     // Return a stable object reference using useMemo
@@ -97,9 +193,14 @@ export function useNavigation(initialSessionId) {
         selectSession,
         pushTranscript,
         pushToolDetail,
+        pushPlanDetail,
+        pushEditDetail,
+        pushWriteDetail,
+        pushBashDetail,
+        pushGrepDetail,
         pop,
         updateTranscriptPosition,
-    }), [currentView, depth, state.stack, dispatch, selectSession, pushTranscript, pushToolDetail, pop, updateTranscriptPosition]);
+    }), [currentView, depth, state.stack, dispatch, selectSession, pushTranscript, pushToolDetail, pushPlanDetail, pushEditDetail, pushWriteDetail, pushBashDetail, pushGrepDetail, pop, updateTranscriptPosition]);
 }
 /**
  * Type guard to check if current view is list view
@@ -118,5 +219,35 @@ export function isTranscriptView(view) {
  */
 export function isToolDetailView(view) {
     return view.type === 'tool-detail';
+}
+/**
+ * Type guard to check if current view is plan detail view
+ */
+export function isPlanDetailView(view) {
+    return view.type === 'plan-detail';
+}
+/**
+ * Type guard to check if current view is edit detail view
+ */
+export function isEditDetailView(view) {
+    return view.type === 'edit-detail';
+}
+/**
+ * Type guard to check if current view is write detail view
+ */
+export function isWriteDetailView(view) {
+    return view.type === 'write-detail';
+}
+/**
+ * Type guard to check if current view is bash detail view
+ */
+export function isBashDetailView(view) {
+    return view.type === 'bash-detail';
+}
+/**
+ * Type guard to check if current view is grep detail view
+ */
+export function isGrepDetailView(view) {
+    return view.type === 'grep-detail';
 }
 //# sourceMappingURL=useNavigation.js.map
