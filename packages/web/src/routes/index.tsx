@@ -11,7 +11,7 @@ function SessionListPage() {
   const { data, isLoading, error } = useQuery({
     queryKey: ['sessions'],
     queryFn: () => getSessions(),
-    refetchInterval: 5000, // Poll every 5 seconds
+    refetchInterval: 30000, // Poll every 30 seconds as fallback (SSE provides real-time updates)
   });
 
   if (isLoading) {
