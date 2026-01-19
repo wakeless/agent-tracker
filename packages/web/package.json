@@ -5,13 +5,26 @@
   "description": "Web dashboard for Agent Tracker - browser-based session monitoring",
   "type": "module",
   "scripts": {
-    "dev": "echo 'Web package not yet implemented'",
-    "build": "echo 'Web package not yet implemented'"
+    "dev": "vinxi dev",
+    "build": "vinxi build",
+    "start": "vinxi start"
   },
   "engines": {
     "node": ">=18.0.0"
   },
   "dependencies": {
-    "@agent-tracker/core": "*"
+    "@agent-tracker/core": "*",
+    "@tanstack/react-router": "^1.120.20",
+    "@tanstack/start": "^1.120.20",
+    "@tanstack/react-query": "^5.64.2",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "vinxi": "^0.5.3"
+  },
+  "devDependencies": {
+    "@types/node": "^24.7.2",
+    "@types/react": "^19.0.7",
+    "@types/react-dom": "^19.0.3",
+    "typescript": "^5.9.3"
   }
 }
