@@ -17,13 +17,14 @@
   },
   "dependencies": {
     "@agent-tracker/core": "*",
+    "@tanstack/react-query": "^5.64.2",
     "@tanstack/react-router": "^1.151.6",
     "@tanstack/react-start": "^1.151.6",
-    "@tanstack/react-query": "^5.64.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.57.0",
     "@types/node": "^24.7.2",
     "@types/react": "^19.0.7",
     "@types/react-dom": "^19.0.3",

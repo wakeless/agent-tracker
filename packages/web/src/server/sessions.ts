@@ -14,23 +14,33 @@ function getService(): ExploreTrackerService {
   return service;
 }
 
+// Serialize a session to be JSON-safe (convert Date objects to ISO strings)
+function serializeSession(session: Session): Session {
+  return JSON.parse(JSON.stringify(session));
+}
+
 export interface SessionsResponse {
   sessions: Session[];
   counts: SessionCounts;
 }
 
 export const getSessions = createServerFn({ method: 'GET' }).handler(
-  async (): Promise<SessionsResponse> => {
+  async () => {
     const svc = getService();
     svc.updateSessionStatuses();
 
-    const sessions = svc.getSessions();
+    const rawSessions = svc.getSessions();
+    const sessions = rawSessions.map(serializeSession);
     const counts = svc.getSessionCounts();
 
-    return {
+    // Return as a plain JSON-stringified object to avoid seroval issues
+    const data = {
       sessions,
       counts,
     };
+
+    // Just return the data - types will be inferred
+    return data;
   }
 );
 
@@ -40,7 +50,7 @@ export const getSession = createServerFn({ method: 'GET' }).handler(
     const sessions = svc.getSessions();
     const session = sessions.find((s) => s.id === id) || null;
 
-    return { session };
+    return { session: session ? serializeSession(session) : null };
   }
 );
 
@@ -55,8 +65,9 @@ export const getTranscript = createServerFn({ method: 'GET' }).handler(
       const reader = new TranscriptReader();
       const entries = await reader.readTranscript(transcriptPath);
 
+      // Serialize entries to convert Date objects to ISO strings
       return {
-        entries,
+        entries: JSON.parse(JSON.stringify(entries)),
         total: entries.length,
       };
     } catch {

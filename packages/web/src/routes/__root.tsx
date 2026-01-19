@@ -1,4 +1,4 @@
-import { createRootRoute, Outlet } from '@tanstack/react-router';
+import { createRootRoute, Outlet, HeadContent, Scripts } from '@tanstack/react-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 const queryClient = new QueryClient({
@@ -12,6 +12,12 @@ const queryClient = new QueryClient({
 
 export const Route = createRootRoute({
   component: RootComponent,
+  head: () => ({
+    meta: [
+      { charSet: 'utf-8' },
+      { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+    ],
+  }),
 });
 
 function RootComponent() {
@@ -19,8 +25,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <html lang="en">
           <head>
-            <meta charSet="utf-8" />
-            <meta name="viewport" content="width=device-width, initial-scale=1" />
+            <HeadContent />
             <title>Agent Tracker</title>
             <style>{`
               * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -44,6 +49,7 @@ function RootComponent() {
                 <Outlet />
               </main>
             </div>
+            <Scripts />
           </body>
         </html>
     </QueryClientProvider>
