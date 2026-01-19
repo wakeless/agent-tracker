@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useEffect, useMemo, useCallback, useRef } from 'react';
 import { useInput } from 'ink';
-import { SessionTrackerService } from './services/SessionTrackerService.js';
 import { ExploreTrackerService } from './services/ExploreTrackerService.js';
 import { useSessionTracker } from './hooks/useSessionTracker.js';
 import { SessionListView } from './components/SessionListView.js';
@@ -16,35 +15,15 @@ import { TranscriptReader } from './services/TranscriptReader.js';
 import { useNavigation, NavStackItem } from './hooks/useNavigation.js';
 import { ParsedTranscriptEntry } from './types/transcript.js';
 import { EditInput, WriteInput, BashInput, GrepInput } from './components/tools/ToolDisplayProps.js';
-import { homedir } from 'os';
-import { join } from 'path';
 
-export interface AppProps {
-  eventsFilePath?: string;
-  exploreMode?: boolean;
-}
-
-// Common interface for both tracker services
-type TrackerService = SessionTrackerService | ExploreTrackerService;
-
-export function App({ eventsFilePath, exploreMode = false }: AppProps = {}) {
+export function App() {
   // Create tracker service instance once using useRef for stability
-  // This ensures the service instance is the same across all re-renders
-  const serviceRef = useRef<TrackerService | null>(null);
+  // Discovers sessions from ~/.claude/projects/ automatically
+  const serviceRef = useRef<ExploreTrackerService | null>(null);
   if (!serviceRef.current) {
-    if (exploreMode) {
-      // Explore mode: discover sessions from ~/.claude/projects/
-      serviceRef.current = new ExploreTrackerService({
-        enableLogging: false,
-      });
-    } else {
-      // Default mode: watch events file for hook-generated events
-      const defaultPath = join(homedir(), '.agent-tracker', 'sessions.jsonl');
-      serviceRef.current = new SessionTrackerService({
-        eventsFilePath: eventsFilePath || defaultPath,
-        enableLogging: false,
-      });
-    }
+    serviceRef.current = new ExploreTrackerService({
+      enableLogging: false,
+    });
   }
   const service = serviceRef.current;
 

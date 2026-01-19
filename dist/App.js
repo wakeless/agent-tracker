@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useCallback, useRef } from 'react';
 import { useInput } from 'ink';
-import { SessionTrackerService } from './services/SessionTrackerService.js';
 import { ExploreTrackerService } from './services/ExploreTrackerService.js';
 import { useSessionTracker } from './hooks/useSessionTracker.js';
 import { SessionListView } from './components/SessionListView.js';
@@ -14,27 +13,14 @@ import { GrepDetailView } from './components/GrepDetailView.js';
 import { EmptyState } from './components/EmptyState.js';
 import { TranscriptReader } from './services/TranscriptReader.js';
 import { useNavigation } from './hooks/useNavigation.js';
-import { homedir } from 'os';
-import { join } from 'path';
-export function App({ eventsFilePath, exploreMode = false } = {}) {
+export function App() {
     // Create tracker service instance once using useRef for stability
-    // This ensures the service instance is the same across all re-renders
+    // Discovers sessions from ~/.claude/projects/ automatically
     const serviceRef = useRef(null);
     if (!serviceRef.current) {
-        if (exploreMode) {
-            // Explore mode: discover sessions from ~/.claude/projects/
-            serviceRef.current = new ExploreTrackerService({
-                enableLogging: false,
-            });
-        }
-        else {
-            // Default mode: watch events file for hook-generated events
-            const defaultPath = join(homedir(), '.agent-tracker', 'sessions.jsonl');
-            serviceRef.current = new SessionTrackerService({
-                eventsFilePath: eventsFilePath || defaultPath,
-                enableLogging: false,
-            });
-        }
+        serviceRef.current = new ExploreTrackerService({
+            enableLogging: false,
+        });
     }
     const service = serviceRef.current;
     // Use the hook to subscribe to session updates
