@@ -10,7 +10,11 @@
     "build": "vite build",
     "build:proxy": "BASE_PATH=/agent-tracker vite build",
     "start": "node .output/server/index.mjs",
-    "start:proxy": "BASE_PATH=/agent-tracker node .output/server/index.mjs"
+    "start:proxy": "BASE_PATH=/agent-tracker node .output/server/index.mjs",
+    "test": "playwright test",
+    "test:integration": "playwright test tests/integration.spec.ts",
+    "test:debug": "playwright test --grep debug",
+    "test:headed": "playwright test --headed"
   },
   "engines": {
     "node": ">=18.0.0"

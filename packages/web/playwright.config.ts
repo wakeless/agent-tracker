@@ -8,7 +8,7 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: 'list',
   use: {
-    baseURL: 'http://localhost:3000/agent-tracker',
+    baseURL: 'http://localhost:3000/agent-tracker/',
     trace: 'on-first-retry',
   },
   webServer: {
