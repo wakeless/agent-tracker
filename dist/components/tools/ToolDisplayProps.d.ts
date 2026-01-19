@@ -47,6 +47,13 @@ export interface WriteInput {
     file_path: string;
     content: string;
 }
+export interface ExitPlanModeInput {
+    plan: string;
+    allowedPrompts?: Array<{
+        tool: string;
+        prompt: string;
+    }>;
+}
 export declare function isTodoWriteInput(input: unknown): input is TodoWriteInput;
 export declare function isBashInput(input: unknown): input is BashInput;
 export declare function isEditInput(input: unknown): input is EditInput;
@@ -55,4 +62,5 @@ export declare function isWebFetchInput(input: unknown): input is WebFetchInput;
 export declare function isGlobInput(input: unknown): input is GlobInput;
 export declare function isGrepInput(input: unknown): input is GrepInput;
 export declare function isWriteInput(input: unknown): input is WriteInput;
+export declare function isExitPlanModeInput(input: unknown): input is ExitPlanModeInput;
 //# sourceMappingURL=ToolDisplayProps.d.ts.map

@@ -26,6 +26,8 @@ export function BashTool({ toolInput, mode }) {
             React.createElement(Text, { dimColor: true }, "$ "),
             React.createElement(Text, null, command)),
         description && (React.createElement(Box, { marginTop: 1 },
-            React.createElement(Text, { dimColor: true }, description)))));
+            React.createElement(Text, { dimColor: true }, description))),
+        React.createElement(Box, { marginTop: 1 },
+            React.createElement(Text, { dimColor: true, italic: true }, "Press Enter to view output \u2192"))));
 }
 //# sourceMappingURL=BashTool.js.map

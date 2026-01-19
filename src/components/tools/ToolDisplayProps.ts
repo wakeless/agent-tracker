@@ -60,6 +60,14 @@ export interface WriteInput {
   content: string;
 }
 
+export interface ExitPlanModeInput {
+  plan: string;
+  allowedPrompts?: Array<{
+    tool: string;
+    prompt: string;
+  }>;
+}
+
 // Type guards
 
 export function isTodoWriteInput(input: unknown): input is TodoWriteInput {
@@ -134,4 +142,10 @@ export function isWriteInput(input: unknown): input is WriteInput {
     'content' in obj &&
     typeof obj.content === 'string'
   );
+}
+
+export function isExitPlanModeInput(input: unknown): input is ExitPlanModeInput {
+  if (typeof input !== 'object' || input === null) return false;
+  const obj = input as Record<string, unknown>;
+  return 'plan' in obj && typeof obj.plan === 'string';
 }

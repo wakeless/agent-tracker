@@ -63,4 +63,10 @@ export function isWriteInput(input) {
         'content' in obj &&
         typeof obj.content === 'string');
 }
+export function isExitPlanModeInput(input) {
+    if (typeof input !== 'object' || input === null)
+        return false;
+    const obj = input;
+    return 'plan' in obj && typeof obj.plan === 'string';
+}
 //# sourceMappingURL=ToolDisplayProps.js.map

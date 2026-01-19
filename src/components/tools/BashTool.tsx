@@ -41,6 +41,9 @@ export function BashTool({ toolInput, mode }: ToolDisplayProps) {
           <Text dimColor>{description}</Text>
         </Box>
       )}
+      <Box marginTop={1}>
+        <Text dimColor italic>Press Enter to view output →</Text>
+      </Box>
     </Box>
   );
 }

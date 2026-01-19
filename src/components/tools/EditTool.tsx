@@ -28,6 +28,10 @@ export function EditTool({ toolInput, mode }: ToolDisplayProps) {
   const oldChars = old_string.length;
   const newChars = new_string.length;
 
+  // Show first few lines of diff as preview
+  const oldPreview = old_string.split('\n').slice(0, 3);
+  const newPreview = new_string.split('\n').slice(0, 3);
+
   return (
     <Box flexDirection="column">
       <Box>
@@ -44,6 +48,35 @@ export function EditTool({ toolInput, mode }: ToolDisplayProps) {
           <Text color="yellow">Replace all occurrences</Text>
         </Box>
       )}
+
+      {/* Diff preview */}
+      <Box marginTop={1} flexDirection="column">
+        {oldPreview.map((line, idx) => (
+          <Box key={`old-${idx}`} marginLeft={2}>
+            <Text color="red">- {line || ' '}</Text>
+          </Box>
+        ))}
+        {oldLines > 3 && (
+          <Box marginLeft={2}>
+            <Text color="red" dimColor>  ...</Text>
+          </Box>
+        )}
+        {newPreview.map((line, idx) => (
+          <Box key={`new-${idx}`} marginLeft={2}>
+            <Text color="green">+ {line || ' '}</Text>
+          </Box>
+        ))}
+        {newLines > 3 && (
+          <Box marginLeft={2}>
+            <Text color="green" dimColor>  ...</Text>
+          </Box>
+        )}
+      </Box>
+
+      {/* Enter hint */}
+      <Box marginTop={1}>
+        <Text color="cyan">Press Enter to view full diff →</Text>
+      </Box>
     </Box>
   );
 }

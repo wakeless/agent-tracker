@@ -2,8 +2,11 @@ import React from 'react';
 import { TodoWriteTool } from './TodoWriteTool.js';
 import { BashTool } from './BashTool.js';
 import { EditTool } from './EditTool.js';
+import { WriteTool } from './WriteTool.js';
 import { ReadTool } from './ReadTool.js';
 import { WebFetchTool } from './WebFetchTool.js';
+import { ExitPlanModeTool } from './ExitPlanModeTool.js';
+import { GrepTool } from './GrepTool.js';
 import { GenericTool } from './GenericTool.js';
 export function ToolDisplay(props) {
     const { toolName } = props;
@@ -19,13 +22,12 @@ export function ToolDisplay(props) {
             return React.createElement(ReadTool, { ...props });
         case 'WebFetch':
             return React.createElement(WebFetchTool, { ...props });
-        // Add more tool renderers here as needed
-        // case 'Glob':
-        //   return <GlobTool {...props} />;
-        // case 'Grep':
-        //   return <GrepTool {...props} />;
-        // case 'Write':
-        //   return <WriteTool {...props} />;
+        case 'ExitPlanMode':
+            return React.createElement(ExitPlanModeTool, { ...props });
+        case 'Write':
+            return React.createElement(WriteTool, { ...props });
+        case 'Grep':
+            return React.createElement(GrepTool, { ...props });
         default:
             // Fallback to generic renderer for unknown tools
             return React.createElement(GenericTool, { ...props });
