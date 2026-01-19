@@ -1,0 +1,17 @@
+{
+  "name": "@agent-tracker/web",
+  "version": "0.0.3",
+  "private": true,
+  "description": "Web dashboard for Agent Tracker - browser-based session monitoring",
+  "type": "module",
+  "scripts": {
+    "dev": "echo 'Web package not yet implemented'",
+    "build": "echo 'Web package not yet implemented'"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@agent-tracker/core": "*"
+  }
+}

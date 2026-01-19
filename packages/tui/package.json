@@ -1,0 +1,40 @@
+{
+  "name": "@agent-tracker/tui",
+  "version": "0.0.3",
+  "description": "Terminal UI for Agent Tracker - real-time session monitoring dashboard",
+  "type": "module",
+  "main": "dist/cli.js",
+  "bin": {
+    "agent-tracker": "./dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "dev": "tsx src/cli.tsx",
+    "build": "tsc",
+    "start": "node dist/cli.js",
+    "test": "vitest",
+    "test:watch": "vitest --watch",
+    "clean": "rm -rf dist"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@agent-tracker/core": "*",
+    "ink": "^6.3.1",
+    "ink-markdown": "^1.0.4",
+    "marked": "^15.0.12",
+    "marked-terminal": "^7.3.0",
+    "react": "^19.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.7.2",
+    "@types/react": "^19.2.2",
+    "ink-testing-library": "^4.0.0",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  }
+}

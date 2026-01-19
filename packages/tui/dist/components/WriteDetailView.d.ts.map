@@ -1,0 +1,1 @@
+{"version":3,"file":"WriteDetailView.d.ts","sourceRoot":"","sources":["../../src/components/WriteDetailView.tsx"],"names":[],"mappings":"AAAA,OAAO,KAAK,MAAM,OAAO,CAAC;AAG1B,OAAO,EAAE,UAAU,EAAE,MAAM,6BAA6B,CAAC;AAEzD,MAAM,WAAW,oBAAoB;IACnC,UAAU,EAAE,UAAU,CAAC;CACxB;AA8CD;;GAEG;AACH,wBAAgB,eAAe,CAAC,EAAE,UAAU,EAAE,EAAE,oBAAoB,qBAyCnE"}

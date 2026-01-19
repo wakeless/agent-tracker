@@ -1,30 +1,26 @@
 {
-  "name": "agent-tracker",
+  "name": "agent-tracker-monorepo",
   "version": "0.0.3",
-  "description": "Real-time TUI dashboard for tracking and monitoring active Claude Code sessions",
+  "private": true,
+  "description": "Monorepo for Agent Tracker - TUI and Web dashboard for tracking Claude Code sessions",
   "type": "module",
-  "main": "dist/index.js",
-  "bin": {
-    "agent-tracker": "./dist/cli.js"
-  },
-  "files": [
-    "dist",
-    "scripts/hooks",
-    ".claude-plugin",
-    "README.md",
-    "LICENSE"
+  "workspaces": [
+    "packages/core",
+    "packages/tui",
+    "packages/web"
   ],
-  "publishConfig": {
-    "access": "public"
-  },
   "engines": {
     "node": ">=18.0.0"
   },
   "scripts": {
-    "dev": "tsx src/cli.tsx",
-    "build": "tsc && npm run build:mcp",
+    "dev": "npm run dev -w @agent-tracker/tui",
+    "dev:web": "npm run dev -w @agent-tracker/web",
+    "build": "npm run build -w @agent-tracker/core && npm run build -w @agent-tracker/tui && npm run build:mcp",
+    "build:core": "npm run build -w @agent-tracker/core",
+    "build:tui": "npm run build -w @agent-tracker/tui",
+    "build:web": "npm run build -w @agent-tracker/web",
     "build:mcp": "cd mcp && tsc",
-    "start": "node dist/cli.js",
+    "start": "npm run start -w @agent-tracker/tui",
     "test": "vitest",
     "test:watch": "vitest --watch",
     "test:ui": "vitest --ui",
@@ -35,7 +31,7 @@
     "docs:dev": "cd website && npm start",
     "docs:build": "cd website && npm run build",
     "docs:serve": "cd website && npm run serve",
-    "prepublishOnly": "npm run build"
+    "clean": "rm -rf packages/*/dist node_modules/.cache"
   },
   "keywords": [
     "cli",
