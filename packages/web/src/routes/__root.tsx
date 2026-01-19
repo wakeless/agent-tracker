@@ -1,6 +1,5 @@
 import { createRootRoute, Outlet } from '@tanstack/react-router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useSessionEvents } from '../hooks/useSessionEvents';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -15,17 +14,10 @@ export const Route = createRootRoute({
   component: RootComponent,
 });
 
-// SSE connection component that runs only on client
-function SessionEventsProvider({ children }: { children: React.ReactNode }) {
-  useSessionEvents();
-  return <>{children}</>;
-}
-
 function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
-      <SessionEventsProvider>
-        <html lang="en">
+      <html lang="en">
           <head>
             <meta charSet="utf-8" />
             <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -54,7 +46,6 @@ function RootComponent() {
             </div>
           </body>
         </html>
-      </SessionEventsProvider>
     </QueryClientProvider>
   );
 }

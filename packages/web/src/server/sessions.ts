@@ -34,24 +34,23 @@ export const getSessions = createServerFn({ method: 'GET' }).handler(
   }
 );
 
-export const getSession = createServerFn({ method: 'GET' })
-  .validator((id: string) => id)
-  .handler(async ({ data: id }): Promise<{ session: Session | null }> => {
+export const getSession = createServerFn({ method: 'GET' }).handler(
+  async (id: string): Promise<{ session: Session | null }> => {
     const svc = getService();
     const sessions = svc.getSessions();
     const session = sessions.find((s) => s.id === id) || null;
 
     return { session };
-  });
+  }
+);
 
 export interface TranscriptResponse {
   entries: ParsedTranscriptEntry[];
   total: number;
 }
 
-export const getTranscript = createServerFn({ method: 'GET' })
-  .validator((transcriptPath: string) => transcriptPath)
-  .handler(async ({ data: transcriptPath }): Promise<TranscriptResponse> => {
+export const getTranscript = createServerFn({ method: 'GET' }).handler(
+  async (transcriptPath: string): Promise<TranscriptResponse> => {
     try {
       const reader = new TranscriptReader();
       const entries = await reader.readTranscript(transcriptPath);
@@ -60,11 +59,12 @@ export const getTranscript = createServerFn({ method: 'GET' })
         entries,
         total: entries.length,
       };
-    } catch (error) {
+    } catch {
       // Return empty for missing transcripts (new sessions)
       return {
         entries: [],
         total: 0,
       };
     }
-  });
+  }
+);

@@ -6,8 +6,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:proxy": "BASE_PATH=/agent-tracker vite",
     "build": "vite build",
-    "start": "node .output/server/index.mjs"
+    "build:proxy": "BASE_PATH=/agent-tracker vite build",
+    "start": "node .output/server/index.mjs",
+    "start:proxy": "BASE_PATH=/agent-tracker node .output/server/index.mjs"
   },
   "engines": {
     "node": ">=18.0.0"

@@ -15,14 +15,14 @@ function TranscriptPage() {
 
   const { data: sessionData, isLoading: sessionLoading } = useQuery({
     queryKey: ['session', sessionId],
-    queryFn: () => getSession({ data: sessionId }),
+    queryFn: () => getSession(sessionId),
   });
 
   const { data: transcriptData, isLoading: transcriptLoading } = useQuery({
     queryKey: ['transcript', sessionData?.session?.transcriptPath],
     queryFn: () =>
       sessionData?.session?.transcriptPath
-        ? getTranscript({ data: sessionData.session.transcriptPath })
+        ? getTranscript(sessionData.session.transcriptPath)
         : Promise.resolve({ entries: [], total: 0 }),
     enabled: !!sessionData?.session?.transcriptPath,
     refetchInterval: 5000, // Poll for new entries

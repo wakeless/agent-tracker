@@ -4,6 +4,7 @@ import { tanstackStart } from '@tanstack/react-start/plugin/vite';
 import viteReact from '@vitejs/plugin-react';
 
 export default defineConfig({
+  base: process.env.BASE_PATH || '/',
   server: {
     port: 3000,
   },
@@ -12,7 +13,9 @@ export default defineConfig({
       root: __dirname,
       ignoreConfigErrors: true,
     }),
-    tanstackStart(),
+    tanstackStart({
+      basePath: process.env.BASE_PATH || '/',
+    }),
     viteReact(),
   ],
 });
