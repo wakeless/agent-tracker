@@ -1,7 +1,8 @@
 /**
  * ProjectScanner
  *
- * Scans ~/.claude/projects/ for session information by reading sessions-index.json files.
+ * Scans ~/.claude/projects/ for session information by reading sessions-index.json files
+ * and also by directly discovering JSONL transcript files.
  * This enables "explore mode" - discovering Claude Code sessions without requiring hooks.
  *
  * Claude Code maintains a sessions-index.json file in each project directory with metadata:
@@ -9,6 +10,9 @@
  * - firstPrompt, messageCount
  * - created, modified timestamps
  * - projectPath (working directory), gitBranch
+ *
+ * For projects without sessions-index.json, we scan JSONL files directly and extract
+ * session metadata from the first user message entry.
  */
 import * as fs from 'fs';
 import * as path from 'path';
@@ -37,10 +41,134 @@ export class ProjectScanner {
         }
     }
     /**
-     * Scan all sessions-index.json files and return entries
+     * Extract session metadata from a JSONL transcript file by reading the first few lines.
+     * Only reads a limited portion of the file to avoid memory issues with large transcripts.
+     * Returns a SessionIndexEntry or null if unable to parse.
+     */
+    extractSessionFromJsonl(jsonlPath) {
+        try {
+            // Only read first 100KB of the file to avoid memory issues with large transcripts
+            const fd = fs.openSync(jsonlPath, 'r');
+            const buffer = Buffer.alloc(100 * 1024);
+            const bytesRead = fs.readSync(fd, buffer, 0, buffer.length, 0);
+            fs.closeSync(fd);
+            const fileContent = buffer.toString('utf-8', 0, bytesRead);
+            const lines = fileContent.split('\n').filter(line => line.trim());
+            let sessionId = '';
+            let cwd = '';
+            let firstPrompt = 'No prompt';
+            let created = '';
+            let modified = '';
+            let gitBranch = '';
+            let isSidechain = false;
+            let messageCount = 0;
+            // Parse the first few lines to extract metadata
+            for (let i = 0; i < Math.min(lines.length, 20); i++) {
+                try {
+                    const entry = JSON.parse(lines[i]);
+                    // Get session metadata from any entry that has it
+                    if (entry.sessionId && !sessionId) {
+                        sessionId = entry.sessionId;
+                    }
+                    if (entry.cwd && !cwd) {
+                        cwd = entry.cwd;
+                    }
+                    if (entry.gitBranch && !gitBranch) {
+                        gitBranch = entry.gitBranch;
+                    }
+                    if (entry.isSidechain !== undefined) {
+                        isSidechain = entry.isSidechain;
+                    }
+                    // Get first user message as the prompt
+                    if (entry.type === 'user' && entry.message?.content && firstPrompt === 'No prompt') {
+                        const content = entry.message.content;
+                        if (typeof content === 'string') {
+                            firstPrompt = content.length > 200 ? content.substring(0, 197) + '...' : content;
+                        }
+                        else if (Array.isArray(content)) {
+                            const textContent = content.find((c) => c.type === 'text');
+                            if (textContent && textContent.text) {
+                                firstPrompt = textContent.text.length > 200
+                                    ? textContent.text.substring(0, 197) + '...'
+                                    : textContent.text;
+                            }
+                        }
+                        if (!created && entry.timestamp) {
+                            created = entry.timestamp;
+                        }
+                    }
+                    // Count messages
+                    if (entry.type === 'user' || entry.type === 'assistant') {
+                        messageCount++;
+                    }
+                }
+                catch {
+                    // Skip malformed lines
+                }
+            }
+            // Get file stats for mtime and modified time
+            const stats = fs.statSync(jsonlPath);
+            modified = stats.mtime.toISOString();
+            if (!created) {
+                created = stats.birthtime?.toISOString() || modified;
+            }
+            if (!sessionId) {
+                // Extract session ID from filename (UUID.jsonl)
+                const basename = path.basename(jsonlPath, '.jsonl');
+                if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(basename)) {
+                    sessionId = basename;
+                }
+            }
+            if (!sessionId) {
+                return null;
+            }
+            return {
+                sessionId,
+                fullPath: jsonlPath,
+                fileMtime: stats.mtimeMs,
+                firstPrompt,
+                messageCount,
+                created,
+                modified,
+                projectPath: cwd || path.dirname(jsonlPath),
+                gitBranch,
+                isSidechain,
+            };
+        }
+        catch (err) {
+            this.log('Error extracting session from JSONL:', jsonlPath, err);
+            return null;
+        }
+    }
+    /**
+     * Scan a project directory for JSONL files (fallback when no sessions-index.json)
+     */
+    scanProjectJsonlFiles(projectDir) {
+        const entries = [];
+        try {
+            const files = fs.readdirSync(projectDir, { withFileTypes: true });
+            for (const file of files) {
+                // Only process top-level .jsonl files (not in subagents/ subdirectories)
+                if (file.isFile() && file.name.endsWith('.jsonl')) {
+                    const jsonlPath = path.join(projectDir, file.name);
+                    const entry = this.extractSessionFromJsonl(jsonlPath);
+                    if (entry && !entry.isSidechain) {
+                        entries.push(entry);
+                    }
+                }
+            }
+        }
+        catch (err) {
+            this.log('Error scanning project directory for JSONL files:', projectDir, err);
+        }
+        return entries;
+    }
+    /**
+     * Scan all sessions-index.json files and JSONL files, return entries
      */
     scanAllProjects() {
         const entries = [];
+        const seenSessionIds = new Set();
         if (!fs.existsSync(this.claudeProjectsDir)) {
             this.log('Projects directory does not exist:', this.claudeProjectsDir);
             return entries;
@@ -50,7 +178,9 @@ export class ProjectScanner {
             for (const dirent of projectDirs) {
                 if (!dirent.isDirectory())
                     continue;
-                const indexPath = path.join(this.claudeProjectsDir, dirent.name, 'sessions-index.json');
+                const projectPath = path.join(this.claudeProjectsDir, dirent.name);
+                const indexPath = path.join(projectPath, 'sessions-index.json');
+                // First, try to read sessions-index.json
                 if (fs.existsSync(indexPath)) {
                     try {
                         const content = fs.readFileSync(indexPath, 'utf-8');
@@ -61,6 +191,7 @@ export class ProjectScanner {
                                 if (entry.isSidechain)
                                     continue;
                                 entries.push(entry);
+                                seenSessionIds.add(entry.sessionId);
                             }
                         }
                     }
@@ -68,12 +199,20 @@ export class ProjectScanner {
                         this.log('Error reading index file:', indexPath, err);
                     }
                 }
+                // Also scan for JSONL files that might not be in the index
+                const jsonlEntries = this.scanProjectJsonlFiles(projectPath);
+                for (const entry of jsonlEntries) {
+                    if (!seenSessionIds.has(entry.sessionId)) {
+                        entries.push(entry);
+                        seenSessionIds.add(entry.sessionId);
+                    }
+                }
             }
         }
         catch (err) {
             this.log('Error scanning projects directory:', err);
         }
-        this.log(`Found ${entries.length} sessions`);
+        this.log(`Found ${entries.length} sessions (from index + JSONL files)`);
         return entries;
     }
     /**

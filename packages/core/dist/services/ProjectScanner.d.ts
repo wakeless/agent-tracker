@@ -1,7 +1,8 @@
 /**
  * ProjectScanner
  *
- * Scans ~/.claude/projects/ for session information by reading sessions-index.json files.
+ * Scans ~/.claude/projects/ for session information by reading sessions-index.json files
+ * and also by directly discovering JSONL transcript files.
  * This enables "explore mode" - discovering Claude Code sessions without requiring hooks.
  *
  * Claude Code maintains a sessions-index.json file in each project directory with metadata:
@@ -9,6 +10,9 @@
  * - firstPrompt, messageCount
  * - created, modified timestamps
  * - projectPath (working directory), gitBranch
+ *
+ * For projects without sessions-index.json, we scan JSONL files directly and extract
+ * session metadata from the first user message entry.
  */
 import { SessionStartEvent } from '../types/events.js';
 /**
@@ -47,7 +51,17 @@ export declare class ProjectScanner {
     constructor(options?: ProjectScannerOptions);
     private log;
     /**
-     * Scan all sessions-index.json files and return entries
+     * Extract session metadata from a JSONL transcript file by reading the first few lines.
+     * Only reads a limited portion of the file to avoid memory issues with large transcripts.
+     * Returns a SessionIndexEntry or null if unable to parse.
+     */
+    private extractSessionFromJsonl;
+    /**
+     * Scan a project directory for JSONL files (fallback when no sessions-index.json)
+     */
+    private scanProjectJsonlFiles;
+    /**
+     * Scan all sessions-index.json files and JSONL files, return entries
      */
     scanAllProjects(): SessionIndexEntry[];
     /**

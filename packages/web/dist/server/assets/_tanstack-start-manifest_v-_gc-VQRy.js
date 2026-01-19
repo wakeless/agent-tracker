@@ -1,0 +1,4 @@
+const tsrStartManifest = () => ({ "routes": { "__root__": { "filePath": "/home/sprite/agent-tracker/packages/web/src/routes/__root.tsx", "children": ["/", "/sessions/$sessionId"], "preloads": ["/assets/main-y-A2SJIH.js"], "assets": [] }, "/": { "filePath": "/home/sprite/agent-tracker/packages/web/src/routes/index.tsx", "assets": [], "preloads": ["/assets/index-BEfN6cf3.js", "/assets/sessions-CCvar4Hu.js"] }, "/sessions/$sessionId": { "filePath": "/home/sprite/agent-tracker/packages/web/src/routes/sessions/$sessionId.tsx", "children": ["/sessions/$sessionId/transcript"], "assets": [], "preloads": ["/assets/_sessionId-CRODBDTf.js", "/assets/sessions-CCvar4Hu.js"] }, "/sessions/$sessionId/transcript": { "filePath": "/home/sprite/agent-tracker/packages/web/src/routes/sessions/$sessionId.transcript.tsx", "assets": [], "preloads": ["/assets/_sessionId.transcript-B5KXRXxt.js"] } }, "clientEntry": "/assets/main-y-A2SJIH.js" });
+export {
+  tsrStartManifest
+};

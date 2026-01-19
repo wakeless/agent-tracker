@@ -44,23 +44,31 @@ export const getSessions = createServerFn({ method: 'GET' }).handler(
   }
 );
 
-export const getSession = createServerFn({ method: 'GET' }).handler(
-  async (id: string): Promise<{ session: Session | null }> => {
+export const getSession = createServerFn({ method: 'GET' })
+  .handler(async (ctx: { data: string }): Promise<{ session: Session | null }> => {
+    const id = ctx.data;
+    console.log('[getSession] Input ID:', id);
+
     const svc = getService();
+    svc.updateSessionStatuses();  // Refresh session statuses
     const sessions = svc.getSessions();
+
+    console.log('[getSession] Total sessions:', sessions.length);
+
     const session = sessions.find((s) => s.id === id) || null;
+    console.log('[getSession] Found:', !!session);
 
     return { session: session ? serializeSession(session) : null };
-  }
-);
+  });
 
 export interface TranscriptResponse {
   entries: ParsedTranscriptEntry[];
   total: number;
 }
 
-export const getTranscript = createServerFn({ method: 'GET' }).handler(
-  async (transcriptPath: string): Promise<TranscriptResponse> => {
+export const getTranscript = createServerFn({ method: 'GET' })
+  .handler(async (ctx: { data: string }): Promise<TranscriptResponse> => {
+    const transcriptPath = ctx.data;
     try {
       const reader = new TranscriptReader();
       const entries = await reader.readTranscript(transcriptPath);
@@ -77,5 +85,4 @@ export const getTranscript = createServerFn({ method: 'GET' }).handler(
         total: 0,
       };
     }
-  }
-);
+  });

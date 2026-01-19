@@ -12,7 +12,7 @@ function SessionDetailPage() {
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['session', sessionId],
-    queryFn: () => getSession(sessionId),
+    queryFn: () => getSession({ data: sessionId }),
     refetchInterval: 5000,
   });
 

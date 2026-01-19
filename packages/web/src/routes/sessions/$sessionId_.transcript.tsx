@@ -4,7 +4,7 @@ import { getSession, getTranscript } from '../../server/sessions';
 import { ParsedTranscriptEntry } from '@agent-tracker/core';
 import { useState, useEffect, useCallback } from 'react';
 
-export const Route = createFileRoute('/sessions/$sessionId/transcript')({
+export const Route = createFileRoute('/sessions/$sessionId_/transcript')({
   component: TranscriptPage,
 });
 
@@ -15,14 +15,14 @@ function TranscriptPage() {
 
   const { data: sessionData, isLoading: sessionLoading } = useQuery({
     queryKey: ['session', sessionId],
-    queryFn: () => getSession(sessionId),
+    queryFn: () => getSession({ data: sessionId }),
   });
 
   const { data: transcriptData, isLoading: transcriptLoading } = useQuery({
     queryKey: ['transcript', sessionData?.session?.transcriptPath],
     queryFn: () =>
       sessionData?.session?.transcriptPath
-        ? getTranscript(sessionData.session.transcriptPath)
+        ? getTranscript({ data: sessionData.session.transcriptPath })
         : Promise.resolve({ entries: [], total: 0 }),
     enabled: !!sessionData?.session?.transcriptPath,
     refetchInterval: 5000, // Poll for new entries
@@ -213,9 +213,10 @@ function TranscriptEntry({ entry, index, isSelected, onSelect }: TranscriptEntry
     return 'Assistant';
   };
 
-  const lines = entry.content.split('\n');
+  const contentStr = typeof entry.content === 'string' ? entry.content : JSON.stringify(entry.content, null, 2);
+  const lines = contentStr.split('\n');
   const lineCount = lines.length;
-  const displayContent = isExpanded ? entry.content : lines.slice(0, 3).join('\n');
+  const displayContent = isExpanded ? contentStr : lines.slice(0, 3).join('\n');
   const hasMore = lineCount > 3;
 
   return (
