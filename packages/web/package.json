@@ -5,26 +5,28 @@
   "description": "Web dashboard for Agent Tracker - browser-based session monitoring",
   "type": "module",
   "scripts": {
-    "dev": "vinxi dev",
-    "build": "vinxi build",
-    "start": "vinxi start"
+    "dev": "vite",
+    "build": "vite build",
+    "start": "node .output/server/index.mjs"
   },
   "engines": {
     "node": ">=18.0.0"
   },
   "dependencies": {
     "@agent-tracker/core": "*",
-    "@tanstack/react-router": "^1.120.20",
-    "@tanstack/start": "^1.120.20",
+    "@tanstack/react-router": "^1.151.6",
+    "@tanstack/react-start": "^1.151.6",
     "@tanstack/react-query": "^5.64.2",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "vinxi": "^0.5.3"
+    "react-dom": "^19.0.0"
   },
   "devDependencies": {
     "@types/node": "^24.7.2",
     "@types/react": "^19.0.7",
     "@types/react-dom": "^19.0.3",
-    "typescript": "^5.9.3"
+    "@vitejs/plugin-react": "^4.5.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1",
+    "vite-tsconfig-paths": "^5.1.4"
   }
 }
