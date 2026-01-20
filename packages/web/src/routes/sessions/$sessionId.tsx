@@ -48,17 +48,47 @@ function SessionDetailPage() {
     return <NotFoundState sessionId={sessionId} />;
   }
 
+  const displayName = session.displayName || session.cwd.split('/').pop() || 'Unknown';
+  const statusColors: Record<string, string> = {
+    active: '#3fb950',
+    inactive: '#8b949e',
+    ended: '#f85149',
+  };
+
   return (
     <div>
-      <nav style={{ marginBottom: '24px' }}>
-        <Link to="/" style={{ color: '#58a6ff', fontSize: '14px' }}>
-          ← Back to sessions
+      {/* Minimal header bar */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '12px',
+        marginBottom: '16px',
+        flexWrap: 'wrap',
+      }}>
+        <Link to="/" style={{ color: '#58a6ff', fontSize: '13px' }}>
+          ←
         </Link>
-      </nav>
-
-      <SessionHeader session={session} />
-
-      <SessionDetails session={session} />
+        <span style={{
+          color: statusColors[session.status] || '#8b949e',
+          fontSize: '12px',
+        }}>
+          ●
+        </span>
+        <span style={{ fontSize: '14px', fontWeight: 500, color: '#c9d1d9' }}>
+          {displayName}
+        </span>
+        {session.awaitingInput && (
+          <span style={{
+            padding: '2px 8px',
+            borderRadius: '12px',
+            background: '#9e6a03',
+            color: '#f0883e',
+            fontSize: '11px',
+          }}>
+            awaiting input
+          </span>
+        )}
+      </div>
 
       <HighlightsSection entries={transcriptData?.entries || []} />
 
@@ -69,126 +99,6 @@ function SessionDetailPage() {
         isLoading={transcriptLoading}
         onLoadMore={loadMore}
       />
-    </div>
-  );
-}
-
-function SessionHeader({ session }: { session: Session }) {
-  const statusColors: Record<string, { bg: string; text: string }> = {
-    active: { bg: '#238636', text: '#3fb950' },
-    inactive: { bg: '#30363d', text: '#8b949e' },
-    ended: { bg: '#da3633', text: '#f85149' },
-  };
-
-  const { bg, text } = statusColors[session.status] || statusColors.inactive;
-  const displayName = session.displayName || session.cwd.split('/').pop() || 'Unknown';
-
-  return (
-    <div style={{
-      padding: '20px',
-      background: '#161b22',
-      borderRadius: '8px',
-      border: '1px solid #30363d',
-      marginBottom: '16px',
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-        <span style={{
-          padding: '3px 10px',
-          borderRadius: '16px',
-          background: bg,
-          color: text,
-          fontSize: '13px',
-          fontWeight: 500,
-        }}>
-          {session.status}
-        </span>
-        {session.awaitingInput && (
-          <span style={{
-            padding: '3px 10px',
-            borderRadius: '16px',
-            background: '#9e6a03',
-            color: '#f0883e',
-            fontSize: '13px',
-          }}>
-            awaiting input
-          </span>
-        )}
-      </div>
-      <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '4px' }}>
-        {displayName}
-      </h2>
-      <p style={{ color: '#6e7681', fontSize: '12px' }}>
-        {session.id}
-      </p>
-    </div>
-  );
-}
-
-function SessionDetails({ session }: { session: Session }) {
-  const [isExpanded, setIsExpanded] = useState(false);
-
-  return (
-    <div style={{ marginBottom: '16px' }}>
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px',
-          background: 'none',
-          border: 'none',
-          color: '#6e7681',
-          fontSize: '13px',
-          cursor: 'pointer',
-          padding: '4px 0',
-        }}
-      >
-        <span style={{ fontSize: '10px' }}>{isExpanded ? '▼' : '▶'}</span>
-        Session Details
-      </button>
-
-      {isExpanded && (
-        <div style={{
-          display: 'grid',
-          gap: '12px',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          marginTop: '8px',
-          padding: '12px',
-          background: '#161b22',
-          borderRadius: '8px',
-          border: '1px solid #30363d',
-        }}>
-          <div>
-            <div style={{ fontSize: '11px', color: '#6e7681', marginBottom: '4px', textTransform: 'uppercase' }}>
-              Working Directory
-            </div>
-            <code style={{ wordBreak: 'break-all', fontSize: '12px', color: '#c9d1d9' }}>{session.cwd}</code>
-          </div>
-
-          {session.git?.branch && (
-            <div>
-              <div style={{ fontSize: '11px', color: '#6e7681', marginBottom: '4px', textTransform: 'uppercase' }}>
-                Git Branch
-              </div>
-              <span style={{ color: '#58a6ff', fontSize: '13px' }}>{session.git.branch}</span>
-            </div>
-          )}
-
-          <div>
-            <div style={{ fontSize: '11px', color: '#6e7681', marginBottom: '4px', textTransform: 'uppercase' }}>
-              Started
-            </div>
-            <span style={{ fontSize: '13px', color: '#c9d1d9' }}>{formatDate(session.startTime)}</span>
-          </div>
-
-          <div>
-            <div style={{ fontSize: '11px', color: '#6e7681', marginBottom: '4px', textTransform: 'uppercase' }}>
-              Last Activity
-            </div>
-            <span style={{ fontSize: '13px', color: '#c9d1d9' }}>{formatDate(session.lastActivityTime)}</span>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -252,6 +162,7 @@ function extractHighlights(entries: ParsedTranscriptEntry[]): HighlightItem[] {
 }
 
 function HighlightsSection({ entries }: { entries: ParsedTranscriptEntry[] }) {
+  const [isExpanded, setIsExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState<'all' | 'plans' | 'tasks' | 'errors' | 'user'>('all');
   const highlights = useMemo(() => extractHighlights(entries), [entries]);
 
@@ -294,25 +205,68 @@ function HighlightsSection({ entries }: { entries: ParsedTranscriptEntry[] }) {
     });
   };
 
+  // Collapsed view - just show summary counts
+  if (!isExpanded) {
+    return (
+      <button
+        onClick={() => setIsExpanded(true)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          width: '100%',
+          padding: '8px 12px',
+          marginBottom: '12px',
+          background: '#161b22',
+          border: '1px solid #30363d',
+          borderRadius: '6px',
+          cursor: 'pointer',
+          color: '#8b949e',
+          fontSize: '12px',
+        }}
+      >
+        <span>▶</span>
+        <span>Highlights:</span>
+        {counts.plans > 0 && <span style={{ color: '#a371f7' }}>{counts.plans} plans</span>}
+        {counts.tasks > 0 && <span style={{ color: '#f0883e' }}>{counts.tasks} tasks</span>}
+        {counts.errors > 0 && <span style={{ color: '#f85149' }}>{counts.errors} errors</span>}
+        {counts.user > 0 && <span style={{ color: '#58a6ff' }}>{counts.user} user</span>}
+      </button>
+    );
+  }
+
   return (
     <div style={{
       background: '#161b22',
       borderRadius: '8px',
       border: '1px solid #30363d',
-      marginBottom: '16px',
+      marginBottom: '12px',
       overflow: 'hidden',
     }}>
       <div style={{
-        padding: '12px 16px',
+        padding: '8px 12px',
         borderBottom: '1px solid #30363d',
         display: 'flex',
         gap: '8px',
         alignItems: 'center',
         flexWrap: 'wrap',
       }}>
-        <h3 style={{ fontSize: '14px', fontWeight: 500, color: '#c9d1d9', marginRight: '8px' }}>
+        <button
+          onClick={() => setIsExpanded(false)}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: '#8b949e',
+            cursor: 'pointer',
+            padding: '2px',
+            fontSize: '10px',
+          }}
+        >
+          ▼
+        </button>
+        <span style={{ fontSize: '13px', fontWeight: 500, color: '#c9d1d9', marginRight: '4px' }}>
           Highlights
-        </h3>
+        </span>
         {(['all', 'plans', 'tasks', 'errors', 'user'] as const).map(tab => (
           <button
             key={tab}
