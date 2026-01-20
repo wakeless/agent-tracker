@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { useQuery } from '@tanstack/react-query';
-import { useState, useCallback, useMemo } from 'react';
+import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { getSession, getTranscript } from '../../server/sessions';
 import { Session, ParsedTranscriptEntry } from '@agent-tracker/core';
 
@@ -12,7 +12,6 @@ const ENTRIES_PER_PAGE = 50;
 
 function SessionDetailPage() {
   const { sessionId } = Route.useParams();
-  const [limit, setLimit] = useState(ENTRIES_PER_PAGE);
 
   const { data: sessionData, isLoading: sessionLoading, error: sessionError } = useQuery({
     queryKey: ['session', sessionId],
@@ -22,19 +21,39 @@ function SessionDetailPage() {
 
   const session = sessionData?.session;
 
-  const { data: transcriptData, isLoading: transcriptLoading } = useQuery({
-    queryKey: ['transcript', session?.transcriptPath, limit],
-    queryFn: () =>
-      session?.transcriptPath
-        ? getTranscript({ data: { path: session.transcriptPath, limit, offset: 0 } })
-        : Promise.resolve({ entries: [], total: 0, hasMore: false }),
+  const {
+    data: transcriptData,
+    isLoading: transcriptLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: ['transcript', session?.transcriptPath],
+    queryFn: async ({ pageParam }) => {
+      if (!session?.transcriptPath) {
+        return { entries: [], total: 0, hasMore: false };
+      }
+      return getTranscript({
+        data: {
+          path: session.transcriptPath,
+          limit: ENTRIES_PER_PAGE,
+          before: pageParam,
+        },
+      });
+    },
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) => lastPage.hasMore ? lastPage.oldestTimestamp : undefined,
     enabled: !!session?.transcriptPath,
     refetchInterval: 5000,
   });
 
-  const loadMore = useCallback(() => {
-    setLimit(prev => prev + ENTRIES_PER_PAGE);
-  }, []);
+  // Flatten all pages into single array
+  const allEntries = useMemo(() => {
+    if (!transcriptData?.pages) return [];
+    return transcriptData.pages.flatMap(page => page.entries);
+  }, [transcriptData]);
+
+  const total = transcriptData?.pages[0]?.total || 0;
 
   if (sessionLoading) {
     return <LoadingState />;
@@ -90,14 +109,15 @@ function SessionDetailPage() {
         )}
       </div>
 
-      <HighlightsSection entries={transcriptData?.entries || []} />
+      <HighlightsSection entries={allEntries} />
 
       <TranscriptSection
-        entries={transcriptData?.entries || []}
-        total={transcriptData?.total || 0}
-        hasMore={transcriptData?.hasMore || false}
+        entries={allEntries}
+        total={total}
+        hasMore={hasNextPage || false}
         isLoading={transcriptLoading}
-        onLoadMore={loadMore}
+        isFetchingMore={isFetchingNextPage}
+        onLoadMore={fetchNextPage}
       />
     </div>
   );
@@ -337,59 +357,78 @@ interface TranscriptSectionProps {
   total: number;
   hasMore: boolean;
   isLoading: boolean;
+  isFetchingMore: boolean;
   onLoadMore: () => void;
 }
 
-function TranscriptSection({ entries, total, hasMore, isLoading, onLoadMore }: TranscriptSectionProps) {
+function TranscriptSection({ entries, total, hasMore, isLoading, isFetchingMore, onLoadMore }: TranscriptSectionProps) {
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+
+  // Infinite scroll with Intersection Observer
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (observerEntries) => {
+        if (observerEntries[0].isIntersecting && hasMore && !isFetchingMore) {
+          onLoadMore();
+        }
+      },
+      { threshold: 0.1 }
+    );
+
+    if (loadMoreRef.current) {
+      observer.observe(loadMoreRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [hasMore, isFetchingMore, onLoadMore]);
+
   return (
     <div style={{
       background: '#161b22',
       borderRadius: '8px',
       border: '1px solid #30363d',
       overflow: 'hidden',
+      display: 'flex',
+      flexDirection: 'column',
+      maxHeight: 'calc(100vh - 200px)',
     }}>
       <div style={{
-        padding: '12px 16px',
+        padding: '8px 12px',
         borderBottom: '1px solid #30363d',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
+        flexShrink: 0,
       }}>
-        <h3 style={{ fontSize: '14px', fontWeight: 500, color: '#c9d1d9' }}>
+        <span style={{ fontSize: '13px', color: '#8b949e' }}>
           Transcript
-          <span style={{ color: '#6e7681', fontWeight: 400, marginLeft: '8px' }}>
-            {entries.length} of {total} entries
+          <span style={{ marginLeft: '8px' }}>
+            {entries.length} of {total}
           </span>
-        </h3>
-        {hasMore && (
-          <button
-            onClick={onLoadMore}
-            disabled={isLoading}
-            style={{
-              padding: '4px 12px',
-              background: '#21262d',
-              border: '1px solid #30363d',
-              borderRadius: '6px',
-              color: '#58a6ff',
-              fontSize: '12px',
-              cursor: isLoading ? 'wait' : 'pointer',
-            }}
-          >
-            {isLoading ? 'Loading...' : 'Load older'}
-          </button>
-        )}
+        </span>
       </div>
 
-      <div style={{ maxHeight: '600px', overflowY: 'auto' }}>
+      <div ref={scrollContainerRef} style={{ flex: 1, overflowY: 'auto' }}>
         {entries.length === 0 && !isLoading ? (
           <div style={{ padding: '32px', textAlign: 'center', color: '#6e7681' }}>
             No transcript entries yet
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            {[...entries].reverse().map((entry, index) => (
+            {entries.map((entry, index) => (
               <TranscriptEntry key={entry.uuid || index} entry={entry} />
             ))}
+
+            {/* Infinite scroll trigger */}
+            <div ref={loadMoreRef} style={{ padding: '16px', textAlign: 'center' }}>
+              {isFetchingMore && (
+                <span style={{ color: '#8b949e', fontSize: '12px' }}>Loading more...</span>
+              )}
+              {!hasMore && entries.length > 0 && (
+                <span style={{ color: '#6e7681', fontSize: '12px' }}>End of transcript</span>
+              )}
+            </div>
           </div>
         )}
       </div>

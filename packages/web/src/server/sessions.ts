@@ -63,43 +63,58 @@ export const getSession = createServerFn({ method: 'GET' })
 
 export interface TranscriptRequest {
   path: string;
-  limit?: number;  // Number of entries to return (default: 50)
-  offset?: number; // Offset from the end (0 = most recent, default: 0)
+  limit?: number;        // Number of entries to return (default: 50)
+  before?: string;       // Cursor: fetch entries before this ISO timestamp
 }
 
 export interface TranscriptResponse {
   entries: ParsedTranscriptEntry[];
   total: number;
   hasMore: boolean;
+  oldestTimestamp?: string;  // Cursor for next page
 }
 
 export const getTranscript = createServerFn({ method: 'GET' })
   .handler(async (ctx: { data: TranscriptRequest }): Promise<TranscriptResponse> => {
-    const { path: transcriptPath, limit = 50, offset = 0 } = ctx.data;
+    const { path: transcriptPath, limit = 50, before } = ctx.data;
     try {
       const reader = new TranscriptReader();
       const allEntries = await reader.readTranscript(transcriptPath);
 
-      // Filter out system/meta entries for the count
+      // Filter out system/meta entries
       const userEntries = allEntries.filter(
         e => e.type !== 'system' && e.type !== 'file-history' && e.type !== 'meta'
       );
 
       const total = userEntries.length;
 
-      // Get entries from the end (most recent first when displayed)
-      // offset=0 means get the last `limit` entries
-      const startIndex = Math.max(0, total - offset - limit);
-      const endIndex = Math.max(0, total - offset);
-      const entries = userEntries.slice(startIndex, endIndex);
+      // Sort by timestamp descending (most recent first)
+      const sorted = [...userEntries].sort((a, b) =>
+        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+      );
 
-      const hasMore = startIndex > 0;
+      // If cursor provided, find entries older than cursor
+      let filtered = sorted;
+      if (before) {
+        const cursorTime = new Date(before).getTime();
+        filtered = sorted.filter(e => new Date(e.timestamp).getTime() < cursorTime);
+      }
+
+      // Take the first `limit` entries (most recent of the filtered set)
+      const entries = filtered.slice(0, limit);
+      const hasMore = filtered.length > limit;
+
+      // Get the oldest timestamp in this batch for the next cursor
+      const oldestTimestamp = entries.length > 0
+        ? new Date(entries[entries.length - 1].timestamp).toISOString()
+        : undefined;
 
       // Serialize entries to convert Date objects to ISO strings
       return {
         entries: JSON.parse(JSON.stringify(entries)),
         total,
         hasMore,
+        oldestTimestamp,
       };
     } catch {
       // Return empty for missing transcripts (new sessions)
