@@ -363,24 +363,24 @@ interface TranscriptSectionProps {
 
 function TranscriptSection({ entries, total, hasMore, isLoading, isFetchingMore, onLoadMore }: TranscriptSectionProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const loadMoreRef = useRef<HTMLDivElement>(null);
 
-  // Infinite scroll with Intersection Observer
+  // Infinite scroll - use scroll event for reliability
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      (observerEntries) => {
-        if (observerEntries[0].isIntersecting && hasMore && !isFetchingMore) {
-          onLoadMore();
-        }
-      },
-      { threshold: 0.1 }
-    );
+    const scrollContainer = scrollContainerRef.current;
+    if (!scrollContainer) return;
 
-    if (loadMoreRef.current) {
-      observer.observe(loadMoreRef.current);
-    }
+    const handleScroll = () => {
+      if (isFetchingMore || !hasMore) return;
 
-    return () => observer.disconnect();
+      const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
+      // Trigger when within 200px of the bottom
+      if (scrollHeight - scrollTop - clientHeight < 200) {
+        onLoadMore();
+      }
+    };
+
+    scrollContainer.addEventListener('scroll', handleScroll);
+    return () => scrollContainer.removeEventListener('scroll', handleScroll);
   }, [hasMore, isFetchingMore, onLoadMore]);
 
   return (
@@ -389,9 +389,6 @@ function TranscriptSection({ entries, total, hasMore, isLoading, isFetchingMore,
       borderRadius: '8px',
       border: '1px solid #30363d',
       overflow: 'hidden',
-      display: 'flex',
-      flexDirection: 'column',
-      maxHeight: 'calc(100vh - 200px)',
     }}>
       <div style={{
         padding: '8px 12px',
@@ -399,7 +396,6 @@ function TranscriptSection({ entries, total, hasMore, isLoading, isFetchingMore,
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        flexShrink: 0,
       }}>
         <span style={{ fontSize: '13px', color: '#8b949e' }}>
           Transcript
@@ -409,8 +405,28 @@ function TranscriptSection({ entries, total, hasMore, isLoading, isFetchingMore,
         </span>
       </div>
 
-      <div ref={scrollContainerRef} style={{ flex: 1, overflowY: 'auto' }}>
-        {entries.length === 0 && !isLoading ? (
+      <div
+        ref={scrollContainerRef}
+        style={{
+          height: 'calc(100vh - 280px)',
+          overflowY: 'auto',
+        }}
+      >
+        {isLoading ? (
+          <div style={{ padding: '32px', textAlign: 'center', color: '#8b949e' }}>
+            <div style={{ marginBottom: '8px' }}>Loading transcript...</div>
+            <div style={{
+              width: '24px',
+              height: '24px',
+              border: '2px solid #30363d',
+              borderTopColor: '#58a6ff',
+              borderRadius: '50%',
+              margin: '0 auto',
+              animation: 'spin 1s linear infinite',
+            }} />
+            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+          </div>
+        ) : entries.length === 0 ? (
           <div style={{ padding: '32px', textAlign: 'center', color: '#6e7681' }}>
             No transcript entries yet
           </div>
@@ -420,14 +436,28 @@ function TranscriptSection({ entries, total, hasMore, isLoading, isFetchingMore,
               <TranscriptEntry key={entry.uuid || index} entry={entry} />
             ))}
 
-            {/* Infinite scroll trigger */}
-            <div ref={loadMoreRef} style={{ padding: '16px', textAlign: 'center' }}>
-              {isFetchingMore && (
+            {/* Loading indicator / Load more button */}
+            <div style={{ padding: '16px', textAlign: 'center' }}>
+              {isFetchingMore ? (
                 <span style={{ color: '#8b949e', fontSize: '12px' }}>Loading more...</span>
-              )}
-              {!hasMore && entries.length > 0 && (
+              ) : hasMore ? (
+                <button
+                  onClick={() => onLoadMore()}
+                  style={{
+                    padding: '6px 16px',
+                    background: '#21262d',
+                    border: '1px solid #30363d',
+                    borderRadius: '6px',
+                    color: '#58a6ff',
+                    fontSize: '12px',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Load more
+                </button>
+              ) : entries.length > 0 ? (
                 <span style={{ color: '#6e7681', fontSize: '12px' }}>End of transcript</span>
-              )}
+              ) : null}
             </div>
           </div>
         )}
