@@ -12,6 +12,7 @@ export {
   TranscriptReader,
   TranscriptWatcher,
   PlanReader,
+  TaskReader,
 } from './services/index.js';
 
 export type {
@@ -26,6 +27,7 @@ export type {
   TranscriptWatcherOptions,
   PlanFile,
   PlanReaderOptions,
+  TaskReaderOptions,
 } from './services/index.js';
 
 // Types
@@ -75,6 +77,11 @@ export type {
   AssistantMessage,
   Usage,
   ParsedTranscriptEntry,
+  // Tasks
+  TaskStatus,
+  Task,
+  TaskSet,
+  TaskSummary,
 } from './types/index.js';
 
 // Utils

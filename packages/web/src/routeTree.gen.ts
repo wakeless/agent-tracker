@@ -10,7 +10,9 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as TasksIndexRouteImport } from './routes/tasks/index'
 import { Route as PlansIndexRouteImport } from './routes/plans/index'
+import { Route as TasksConversationIdRouteImport } from './routes/tasks/$conversationId'
 import { Route as SessionsSessionIdRouteImport } from './routes/sessions/$sessionId'
 import { Route as PlansFilenameRouteImport } from './routes/plans/$filename'
 import { Route as SessionsSessionIdTranscriptRouteImport } from './routes/sessions/$sessionId_.transcript'
@@ -20,9 +22,19 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TasksIndexRoute = TasksIndexRouteImport.update({
+  id: '/tasks/',
+  path: '/tasks/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PlansIndexRoute = PlansIndexRouteImport.update({
   id: '/plans/',
   path: '/plans/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TasksConversationIdRoute = TasksConversationIdRouteImport.update({
+  id: '/tasks/$conversationId',
+  path: '/tasks/$conversationId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SessionsSessionIdRoute = SessionsSessionIdRouteImport.update({
@@ -46,14 +58,18 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/plans/$filename': typeof PlansFilenameRoute
   '/sessions/$sessionId': typeof SessionsSessionIdRoute
+  '/tasks/$conversationId': typeof TasksConversationIdRoute
   '/plans/': typeof PlansIndexRoute
+  '/tasks/': typeof TasksIndexRoute
   '/sessions/$sessionId/transcript': typeof SessionsSessionIdTranscriptRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/plans/$filename': typeof PlansFilenameRoute
   '/sessions/$sessionId': typeof SessionsSessionIdRoute
+  '/tasks/$conversationId': typeof TasksConversationIdRoute
   '/plans': typeof PlansIndexRoute
+  '/tasks': typeof TasksIndexRoute
   '/sessions/$sessionId/transcript': typeof SessionsSessionIdTranscriptRoute
 }
 export interface FileRoutesById {
@@ -61,7 +77,9 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/plans/$filename': typeof PlansFilenameRoute
   '/sessions/$sessionId': typeof SessionsSessionIdRoute
+  '/tasks/$conversationId': typeof TasksConversationIdRoute
   '/plans/': typeof PlansIndexRoute
+  '/tasks/': typeof TasksIndexRoute
   '/sessions/$sessionId_/transcript': typeof SessionsSessionIdTranscriptRoute
 }
 export interface FileRouteTypes {
@@ -70,21 +88,27 @@ export interface FileRouteTypes {
     | '/'
     | '/plans/$filename'
     | '/sessions/$sessionId'
+    | '/tasks/$conversationId'
     | '/plans/'
+    | '/tasks/'
     | '/sessions/$sessionId/transcript'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/plans/$filename'
     | '/sessions/$sessionId'
+    | '/tasks/$conversationId'
     | '/plans'
+    | '/tasks'
     | '/sessions/$sessionId/transcript'
   id:
     | '__root__'
     | '/'
     | '/plans/$filename'
     | '/sessions/$sessionId'
+    | '/tasks/$conversationId'
     | '/plans/'
+    | '/tasks/'
     | '/sessions/$sessionId_/transcript'
   fileRoutesById: FileRoutesById
 }
@@ -92,7 +116,9 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   PlansFilenameRoute: typeof PlansFilenameRoute
   SessionsSessionIdRoute: typeof SessionsSessionIdRoute
+  TasksConversationIdRoute: typeof TasksConversationIdRoute
   PlansIndexRoute: typeof PlansIndexRoute
+  TasksIndexRoute: typeof TasksIndexRoute
   SessionsSessionIdTranscriptRoute: typeof SessionsSessionIdTranscriptRoute
 }
 
@@ -105,11 +131,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/tasks/': {
+      id: '/tasks/'
+      path: '/tasks'
+      fullPath: '/tasks/'
+      preLoaderRoute: typeof TasksIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/plans/': {
       id: '/plans/'
       path: '/plans'
       fullPath: '/plans/'
       preLoaderRoute: typeof PlansIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tasks/$conversationId': {
+      id: '/tasks/$conversationId'
+      path: '/tasks/$conversationId'
+      fullPath: '/tasks/$conversationId'
+      preLoaderRoute: typeof TasksConversationIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sessions/$sessionId': {
@@ -140,7 +180,9 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   PlansFilenameRoute: PlansFilenameRoute,
   SessionsSessionIdRoute: SessionsSessionIdRoute,
+  TasksConversationIdRoute: TasksConversationIdRoute,
   PlansIndexRoute: PlansIndexRoute,
+  TasksIndexRoute: TasksIndexRoute,
   SessionsSessionIdTranscriptRoute: SessionsSessionIdTranscriptRoute,
 }
 export const routeTree = rootRouteImport

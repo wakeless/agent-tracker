@@ -23,6 +23,7 @@ export const Route = createRootRoute({
 function RootComponent() {
   const location = useLocation();
   const isPlansSection = location.pathname.startsWith('/plans');
+  const isTasksSection = location.pathname.startsWith('/tasks');
   const isSessionsSection = location.pathname === '/' || location.pathname.startsWith('/sessions');
 
   return (
@@ -78,6 +79,21 @@ function RootComponent() {
                       }}
                     >
                       Plans
+                    </Link>
+                    <Link
+                      to="/tasks"
+                      style={{
+                        padding: '6px 16px',
+                        borderRadius: '6px',
+                        fontSize: '14px',
+                        fontWeight: 500,
+                        background: isTasksSection ? '#21262d' : 'transparent',
+                        color: isTasksSection ? '#c9d1d9' : '#8b949e',
+                        border: '1px solid transparent',
+                        textDecoration: 'none',
+                      }}
+                    >
+                      Tasks
                     </Link>
                   </nav>
                 </div>

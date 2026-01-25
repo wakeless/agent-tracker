@@ -1,0 +1,1 @@
+import{c as e}from"./createServerFn-BXywfWJ6.js";import{c as a}from"./main-BE-e8s_j.js";const t=e({method:"GET"}).handler(a("02f2634e2d29bb66556ea859fdb4dd40c962defee00971c7ad724454be68fb6e")),r=e({method:"GET"}).handler(a("a186dc17780a3a9b52a89fc8d49499e923dd202d120c2f377a43984df1de9bb1"));export{r as a,t as g};

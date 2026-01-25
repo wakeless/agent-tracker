@@ -1,5 +1,5 @@
 import { useReducer, useCallback, useMemo } from 'react';
-import { ParsedTranscriptEntry, PlanFile } from '@agent-tracker/core';
+import { ParsedTranscriptEntry, PlanFile, Task, TaskSummary } from '@agent-tracker/core';
 import { EditInput, WriteInput, BashInput, GrepInput } from '../components/tools/ToolDisplayProps.js';
 
 /**
@@ -70,6 +70,21 @@ export type NavStackItem =
       type: 'plan-file-detail';
       planFile: PlanFile;
       planContent: string;
+    }
+  // Tasks navigation (parallel to sessions and plans)
+  | {
+      type: 'tasks-list';
+      selectedConversationId: string | null;
+    }
+  | {
+      type: 'task-set-detail';
+      conversationId: string;
+      selectedTaskId: string | null;
+    }
+  | {
+      type: 'task-detail';
+      conversationId: string;
+      task: Task;
     };
 
 /**
@@ -137,13 +152,20 @@ export type NavAction =
   // Update transcript scroll position
   | { type: 'UPDATE_TRANSCRIPT_POSITION'; selectedUuid: string }
 
-  // Switch between sessions and plans views
+  // Switch between sessions, plans, and tasks views
   | { type: 'SWITCH_TO_PLANS' }
   | { type: 'SWITCH_TO_SESSIONS' }
+  | { type: 'SWITCH_TO_TASKS' }
 
   // Plans navigation
   | { type: 'PUSH_PLAN_FILE_DETAIL'; planFile: PlanFile; planContent: string }
-  | { type: 'UPDATE_PLAN_SELECTION'; planFilename: string | null };
+  | { type: 'UPDATE_PLAN_SELECTION'; planFilename: string | null }
+
+  // Tasks navigation
+  | { type: 'PUSH_TASK_SET_DETAIL'; conversationId: string }
+  | { type: 'PUSH_TASK_DETAIL'; conversationId: string; task: Task }
+  | { type: 'UPDATE_TASK_SET_SELECTION'; conversationId: string | null }
+  | { type: 'UPDATE_TASK_SELECTION'; taskId: string | null };
 
 /**
  * Navigation Reducer
@@ -318,6 +340,66 @@ export function navigationReducer(state: NavState, action: NavAction): NavState 
       };
     }
 
+    case 'SWITCH_TO_TASKS':
+      // Replace entire stack with tasks-list view
+      return {
+        stack: [{ type: 'tasks-list', selectedConversationId: null }],
+      };
+
+    case 'PUSH_TASK_SET_DETAIL':
+      return {
+        stack: [
+          ...state.stack,
+          {
+            type: 'task-set-detail',
+            conversationId: action.conversationId,
+            selectedTaskId: null,
+          },
+        ],
+      };
+
+    case 'PUSH_TASK_DETAIL':
+      return {
+        stack: [
+          ...state.stack,
+          {
+            type: 'task-detail',
+            conversationId: action.conversationId,
+            task: action.task,
+          },
+        ],
+      };
+
+    case 'UPDATE_TASK_SET_SELECTION': {
+      // Only update if top of stack is tasks-list view
+      const top = state.stack[state.stack.length - 1];
+      if (top.type !== 'tasks-list') {
+        return state;
+      }
+
+      return {
+        stack: [
+          ...state.stack.slice(0, -1),
+          { type: 'tasks-list', selectedConversationId: action.conversationId },
+        ],
+      };
+    }
+
+    case 'UPDATE_TASK_SELECTION': {
+      // Only update if top of stack is task-set-detail view
+      const top = state.stack[state.stack.length - 1];
+      if (top.type !== 'task-set-detail') {
+        return state;
+      }
+
+      return {
+        stack: [
+          ...state.stack.slice(0, -1),
+          { ...top, selectedTaskId: action.taskId },
+        ],
+      };
+    }
+
     default:
       return state;
   }
@@ -447,6 +529,31 @@ export function useNavigation(initialSessionId: string | null) {
     []
   );
 
+  // Tasks navigation methods
+  const switchToTasks = useCallback(() => dispatch({ type: 'SWITCH_TO_TASKS' }), []);
+
+  const pushTaskSetDetail = useCallback(
+    (conversationId: string) => dispatch({ type: 'PUSH_TASK_SET_DETAIL', conversationId }),
+    []
+  );
+
+  const pushTaskDetail = useCallback(
+    (conversationId: string, task: Task) =>
+      dispatch({ type: 'PUSH_TASK_DETAIL', conversationId, task }),
+    []
+  );
+
+  const selectTaskSet = useCallback(
+    (conversationId: string | null) =>
+      dispatch({ type: 'UPDATE_TASK_SET_SELECTION', conversationId }),
+    []
+  );
+
+  const selectTask = useCallback(
+    (taskId: string | null) => dispatch({ type: 'UPDATE_TASK_SELECTION', taskId }),
+    []
+  );
+
   // Return a stable object reference using useMemo
   return useMemo(
     () => ({
@@ -473,8 +580,15 @@ export function useNavigation(initialSessionId: string | null) {
       switchToSessions,
       pushPlanFileDetail,
       selectPlan,
+
+      // Tasks navigation methods
+      switchToTasks,
+      pushTaskSetDetail,
+      pushTaskDetail,
+      selectTaskSet,
+      selectTask,
     }),
-    [currentView, depth, state.stack, dispatch, selectSession, pushTranscript, pushToolDetail, pushPlanDetail, pushEditDetail, pushWriteDetail, pushBashDetail, pushGrepDetail, pop, updateTranscriptPosition, switchToPlans, switchToSessions, pushPlanFileDetail, selectPlan]
+    [currentView, depth, state.stack, dispatch, selectSession, pushTranscript, pushToolDetail, pushPlanDetail, pushEditDetail, pushWriteDetail, pushBashDetail, pushGrepDetail, pop, updateTranscriptPosition, switchToPlans, switchToSessions, pushPlanFileDetail, selectPlan, switchToTasks, pushTaskSetDetail, pushTaskDetail, selectTaskSet, selectTask]
   );
 }
 
@@ -564,4 +678,31 @@ export function isPlanFileDetailView(
   view: NavStackItem
 ): view is Extract<NavStackItem, { type: 'plan-file-detail' }> {
   return view.type === 'plan-file-detail';
+}
+
+/**
+ * Type guard to check if current view is tasks list view
+ */
+export function isTasksListView(
+  view: NavStackItem
+): view is Extract<NavStackItem, { type: 'tasks-list' }> {
+  return view.type === 'tasks-list';
+}
+
+/**
+ * Type guard to check if current view is task set detail view
+ */
+export function isTaskSetDetailView(
+  view: NavStackItem
+): view is Extract<NavStackItem, { type: 'task-set-detail' }> {
+  return view.type === 'task-set-detail';
+}
+
+/**
+ * Type guard to check if current view is task detail view
+ */
+export function isTaskDetailView(
+  view: NavStackItem
+): view is Extract<NavStackItem, { type: 'task-detail' }> {
+  return view.type === 'task-detail';
 }

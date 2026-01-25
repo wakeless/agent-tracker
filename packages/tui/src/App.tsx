@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useCallback, useRef } from 'react';
 import { useInput } from 'ink';
-import { ExploreTrackerService, TranscriptReader, ParsedTranscriptEntry, PlanFile } from '@agent-tracker/core';
+import { ExploreTrackerService, TranscriptReader, ParsedTranscriptEntry, PlanFile, Task } from '@agent-tracker/core';
 import { useSessionTracker } from './hooks/useSessionTracker.js';
 import { SessionListView } from './components/SessionListView.js';
 import { TranscriptViewer } from './components/TranscriptViewer.js';
@@ -12,6 +12,9 @@ import { BashDetailView } from './components/BashDetailView.js';
 import { GrepDetailView } from './components/GrepDetailView.js';
 import { PlansListView } from './components/PlansListView.js';
 import { PlanFileDetailView } from './components/PlanFileDetailView.js';
+import { TasksListView } from './components/TasksListView.js';
+import { TaskSetDetailView } from './components/TaskSetDetailView.js';
+import { TaskDetailView } from './components/TaskDetailView.js';
 import { EmptyState } from './components/EmptyState.js';
 import { useNavigation, NavStackItem } from './hooks/useNavigation.js';
 import { EditInput, WriteInput, BashInput, GrepInput } from './components/tools/ToolDisplayProps.js';
@@ -93,18 +96,20 @@ export function App() {
   // 2. User navigation (j/k/Enter in SessionListView)
   // 3. Deleted session handling (at render time below)
 
-  // Global keyboard navigation - ESC (pop), Tab (toggle views), and quit
+  // Global keyboard navigation - ESC (pop), Tab (cycle views), and quit
   // Component-specific navigation (j/k/Enter) is handled by each view
   useInput((input, key) => {
     if (key.escape && navigation.depth > 1) {
-      // Pop back one level (but not from list/plans-list view)
+      // Pop back one level (but not from list/plans-list/tasks-list view)
       navigation.pop();
     } else if (key.tab && navigation.depth === 1) {
-      // Tab to toggle between sessions and plans at top level
+      // Tab to cycle between sessions, plans, and tasks at top level
       const currentView = navigation.currentView;
       if (currentView.type === 'list') {
         navigation.switchToPlans();
       } else if (currentView.type === 'plans-list') {
+        navigation.switchToTasks();
+      } else if (currentView.type === 'tasks-list') {
         navigation.switchToSessions();
       }
     } else if (input === 'q' || (key.ctrl && input === 'c')) {
@@ -321,6 +326,44 @@ export function App() {
         <PlanFileDetailView
           planFile={planFileDetailView.planFile}
           planContent={planFileDetailView.planContent}
+          onBack={navigation.pop}
+        />
+      );
+    }
+
+    case 'tasks-list': {
+      const tasksListView = currentView as Extract<NavStackItem, { type: 'tasks-list' }>;
+      return (
+        <TasksListView
+          selectedConversationId={tasksListView.selectedConversationId}
+          onSelectTaskSet={navigation.selectTaskSet}
+          onViewTaskSet={navigation.pushTaskSetDetail}
+          onSwitchToSessions={navigation.switchToSessions}
+        />
+      );
+    }
+
+    case 'task-set-detail': {
+      const taskSetDetailView = currentView as Extract<NavStackItem, { type: 'task-set-detail' }>;
+      return (
+        <TaskSetDetailView
+          conversationId={taskSetDetailView.conversationId}
+          selectedTaskId={taskSetDetailView.selectedTaskId}
+          onSelectTask={navigation.selectTask}
+          onViewTask={(task: Task) =>
+            navigation.pushTaskDetail(taskSetDetailView.conversationId, task)
+          }
+          onBack={navigation.pop}
+        />
+      );
+    }
+
+    case 'task-detail': {
+      const taskDetailView = currentView as Extract<NavStackItem, { type: 'task-detail' }>;
+      return (
+        <TaskDetailView
+          task={taskDetailView.task}
+          conversationId={taskDetailView.conversationId}
           onBack={navigation.pop}
         />
       );

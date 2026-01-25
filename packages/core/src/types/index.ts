@@ -23,3 +23,6 @@ export * from './actions.js';
 
 // Transcript types
 export * from './transcript.js';
+
+// Task types
+export * from './task.js';

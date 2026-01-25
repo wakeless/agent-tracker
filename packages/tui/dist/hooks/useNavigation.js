@@ -154,6 +154,59 @@ export function navigationReducer(state, action) {
                 ],
             };
         }
+        case 'SWITCH_TO_TASKS':
+            // Replace entire stack with tasks-list view
+            return {
+                stack: [{ type: 'tasks-list', selectedConversationId: null }],
+            };
+        case 'PUSH_TASK_SET_DETAIL':
+            return {
+                stack: [
+                    ...state.stack,
+                    {
+                        type: 'task-set-detail',
+                        conversationId: action.conversationId,
+                        selectedTaskId: null,
+                    },
+                ],
+            };
+        case 'PUSH_TASK_DETAIL':
+            return {
+                stack: [
+                    ...state.stack,
+                    {
+                        type: 'task-detail',
+                        conversationId: action.conversationId,
+                        task: action.task,
+                    },
+                ],
+            };
+        case 'UPDATE_TASK_SET_SELECTION': {
+            // Only update if top of stack is tasks-list view
+            const top = state.stack[state.stack.length - 1];
+            if (top.type !== 'tasks-list') {
+                return state;
+            }
+            return {
+                stack: [
+                    ...state.stack.slice(0, -1),
+                    { type: 'tasks-list', selectedConversationId: action.conversationId },
+                ],
+            };
+        }
+        case 'UPDATE_TASK_SELECTION': {
+            // Only update if top of stack is task-set-detail view
+            const top = state.stack[state.stack.length - 1];
+            if (top.type !== 'task-set-detail') {
+                return state;
+            }
+            return {
+                stack: [
+                    ...state.stack.slice(0, -1),
+                    { ...top, selectedTaskId: action.taskId },
+                ],
+            };
+        }
         default:
             return state;
     }
@@ -221,6 +274,12 @@ export function useNavigation(initialSessionId) {
     const switchToSessions = useCallback(() => dispatch({ type: 'SWITCH_TO_SESSIONS' }), []);
     const pushPlanFileDetail = useCallback((planFile, planContent) => dispatch({ type: 'PUSH_PLAN_FILE_DETAIL', planFile, planContent }), []);
     const selectPlan = useCallback((planFilename) => dispatch({ type: 'UPDATE_PLAN_SELECTION', planFilename }), []);
+    // Tasks navigation methods
+    const switchToTasks = useCallback(() => dispatch({ type: 'SWITCH_TO_TASKS' }), []);
+    const pushTaskSetDetail = useCallback((conversationId) => dispatch({ type: 'PUSH_TASK_SET_DETAIL', conversationId }), []);
+    const pushTaskDetail = useCallback((conversationId, task) => dispatch({ type: 'PUSH_TASK_DETAIL', conversationId, task }), []);
+    const selectTaskSet = useCallback((conversationId) => dispatch({ type: 'UPDATE_TASK_SET_SELECTION', conversationId }), []);
+    const selectTask = useCallback((taskId) => dispatch({ type: 'UPDATE_TASK_SELECTION', taskId }), []);
     // Return a stable object reference using useMemo
     return useMemo(() => ({
         // State
@@ -244,7 +303,13 @@ export function useNavigation(initialSessionId) {
         switchToSessions,
         pushPlanFileDetail,
         selectPlan,
-    }), [currentView, depth, state.stack, dispatch, selectSession, pushTranscript, pushToolDetail, pushPlanDetail, pushEditDetail, pushWriteDetail, pushBashDetail, pushGrepDetail, pop, updateTranscriptPosition, switchToPlans, switchToSessions, pushPlanFileDetail, selectPlan]);
+        // Tasks navigation methods
+        switchToTasks,
+        pushTaskSetDetail,
+        pushTaskDetail,
+        selectTaskSet,
+        selectTask,
+    }), [currentView, depth, state.stack, dispatch, selectSession, pushTranscript, pushToolDetail, pushPlanDetail, pushEditDetail, pushWriteDetail, pushBashDetail, pushGrepDetail, pop, updateTranscriptPosition, switchToPlans, switchToSessions, pushPlanFileDetail, selectPlan, switchToTasks, pushTaskSetDetail, pushTaskDetail, selectTaskSet, selectTask]);
 }
 /**
  * Type guard to check if current view is list view
@@ -305,5 +370,23 @@ export function isPlansListView(view) {
  */
 export function isPlanFileDetailView(view) {
     return view.type === 'plan-file-detail';
+}
+/**
+ * Type guard to check if current view is tasks list view
+ */
+export function isTasksListView(view) {
+    return view.type === 'tasks-list';
+}
+/**
+ * Type guard to check if current view is task set detail view
+ */
+export function isTaskSetDetailView(view) {
+    return view.type === 'task-set-detail';
+}
+/**
+ * Type guard to check if current view is task detail view
+ */
+export function isTaskDetailView(view) {
+    return view.type === 'task-detail';
 }
 //# sourceMappingURL=useNavigation.js.map

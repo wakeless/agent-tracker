@@ -1,4 +1,4 @@
-import { ParsedTranscriptEntry, PlanFile } from '@agent-tracker/core';
+import { ParsedTranscriptEntry, PlanFile, Task } from '@agent-tracker/core';
 import { EditInput, WriteInput, BashInput, GrepInput } from '../components/tools/ToolDisplayProps.js';
 /**
  * Navigation Stack Items
@@ -60,6 +60,17 @@ export type NavStackItem = {
     type: 'plan-file-detail';
     planFile: PlanFile;
     planContent: string;
+} | {
+    type: 'tasks-list';
+    selectedConversationId: string | null;
+} | {
+    type: 'task-set-detail';
+    conversationId: string;
+    selectedTaskId: string | null;
+} | {
+    type: 'task-detail';
+    conversationId: string;
+    task: Task;
 };
 /**
  * Navigation State
@@ -125,12 +136,27 @@ export type NavAction = {
 } | {
     type: 'SWITCH_TO_SESSIONS';
 } | {
+    type: 'SWITCH_TO_TASKS';
+} | {
     type: 'PUSH_PLAN_FILE_DETAIL';
     planFile: PlanFile;
     planContent: string;
 } | {
     type: 'UPDATE_PLAN_SELECTION';
     planFilename: string | null;
+} | {
+    type: 'PUSH_TASK_SET_DETAIL';
+    conversationId: string;
+} | {
+    type: 'PUSH_TASK_DETAIL';
+    conversationId: string;
+    task: Task;
+} | {
+    type: 'UPDATE_TASK_SET_SELECTION';
+    conversationId: string | null;
+} | {
+    type: 'UPDATE_TASK_SELECTION';
+    taskId: string | null;
 };
 /**
  * Navigation Reducer
@@ -168,6 +194,11 @@ export declare function useNavigation(initialSessionId: string | null): {
     switchToSessions: () => void;
     pushPlanFileDetail: (planFile: PlanFile, planContent: string) => void;
     selectPlan: (planFilename: string | null) => void;
+    switchToTasks: () => void;
+    pushTaskSetDetail: (conversationId: string) => void;
+    pushTaskDetail: (conversationId: string, task: Task) => void;
+    selectTaskSet: (conversationId: string | null) => void;
+    selectTask: (taskId: string | null) => void;
 };
 /**
  * Type guard to check if current view is list view
@@ -228,5 +259,23 @@ export declare function isPlansListView(view: NavStackItem): view is Extract<Nav
  */
 export declare function isPlanFileDetailView(view: NavStackItem): view is Extract<NavStackItem, {
     type: 'plan-file-detail';
+}>;
+/**
+ * Type guard to check if current view is tasks list view
+ */
+export declare function isTasksListView(view: NavStackItem): view is Extract<NavStackItem, {
+    type: 'tasks-list';
+}>;
+/**
+ * Type guard to check if current view is task set detail view
+ */
+export declare function isTaskSetDetailView(view: NavStackItem): view is Extract<NavStackItem, {
+    type: 'task-set-detail';
+}>;
+/**
+ * Type guard to check if current view is task detail view
+ */
+export declare function isTaskDetailView(view: NavStackItem): view is Extract<NavStackItem, {
+    type: 'task-detail';
 }>;
 //# sourceMappingURL=useNavigation.d.ts.map

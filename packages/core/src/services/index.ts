@@ -22,3 +22,6 @@ export type { TranscriptWatcherOptions } from './TranscriptWatcher.js';
 
 export { PlanReader } from './PlanReader.js';
 export type { PlanFile, PlanReaderOptions } from './PlanReader.js';
+
+export { TaskReader } from './TaskReader.js';
+export type { TaskReaderOptions } from './TaskReader.js';

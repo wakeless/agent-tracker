@@ -1,13 +1,33 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Box, Text } from 'ink';
-import { Session, getStableColor } from '@agent-tracker/core';
+import { Session, getStableColor, TaskReader, TaskSummary } from '@agent-tracker/core';
 
 interface SessionListProps {
   sessions: Session[];
   selectedSessionId: string | null;
 }
 
+// Cache for task summaries to avoid re-reading on every render
+function getTaskSummariesForSessions(sessions: Session[]): Map<string, TaskSummary> {
+  const reader = new TaskReader();
+  const summaries = new Map<string, TaskSummary>();
+
+  for (const session of sessions) {
+    const summary = reader.getTaskSummaryForSession(session.transcriptPath);
+    if (summary) {
+      summaries.set(session.id, summary);
+    }
+  }
+
+  return summaries;
+}
+
 export function SessionList({ sessions, selectedSessionId }: SessionListProps) {
+  // Compute task summaries for all sessions
+  const taskSummaries = useMemo(() => {
+    return getTaskSummariesForSessions(sessions);
+  }, [sessions]);
+
   if (sessions.length === 0) {
     return (
       <Box flexDirection="column" padding={1}>
@@ -29,6 +49,7 @@ export function SessionList({ sessions, selectedSessionId }: SessionListProps) {
           key={session.id}
           session={session}
           isSelected={session.id === selectedSessionId}
+          taskSummary={taskSummaries.get(session.id) || null}
         />
       ))}
     </Box>
@@ -38,9 +59,10 @@ export function SessionList({ sessions, selectedSessionId }: SessionListProps) {
 interface SessionListItemProps {
   session: Session;
   isSelected: boolean;
+  taskSummary: TaskSummary | null;
 }
 
-function SessionListItem({ session, isSelected }: SessionListItemProps) {
+function SessionListItem({ session, isSelected, taskSummary }: SessionListItemProps) {
   const getStatusColor = (status: Session['status'], awaitingInput: boolean) => {
     if (awaitingInput) return 'magenta';
     if (status === 'active') return 'green';
@@ -138,6 +160,21 @@ function SessionListItem({ session, isSelected }: SessionListItemProps) {
             <>
               <Text dimColor> – </Text>
               <Text dimColor>{tabName}</Text>
+            </>
+          )}
+
+          {/* Task badge (if session has tasks) */}
+          {taskSummary && (
+            <>
+              <Text dimColor> </Text>
+              <Text backgroundColor="#4d3800" color="#d29922">
+                {' '}
+                {taskSummary.inProgress > 0 ? `*${taskSummary.inProgress}` : ''}
+                {taskSummary.inProgress > 0 && taskSummary.pending > 0 ? '/' : ''}
+                {taskSummary.pending > 0 ? `${taskSummary.pending}p` : ''}
+                {taskSummary.inProgress === 0 && taskSummary.pending === 0 ? `${taskSummary.completed}✓` : ''}
+                {' '}
+              </Text>
             </>
           )}
         </Box>

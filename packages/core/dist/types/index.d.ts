@@ -2,4 +2,5 @@ export { type ITermInfo, type DockerInfo, type GitInfo, type TerminalInfo, type 
 export * from './session.js';
 export * from './actions.js';
 export * from './transcript.js';
+export * from './task.js';
 //# sourceMappingURL=index.d.ts.map

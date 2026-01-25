@@ -8,4 +8,5 @@ export { SessionTrackerService } from './SessionTrackerService.js';
 export { TranscriptReader } from './TranscriptReader.js';
 export { TranscriptWatcher } from './TranscriptWatcher.js';
 export { PlanReader } from './PlanReader.js';
+export { TaskReader } from './TaskReader.js';
 //# sourceMappingURL=index.js.map

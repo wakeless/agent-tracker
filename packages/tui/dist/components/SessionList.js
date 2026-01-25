@@ -1,7 +1,23 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Box, Text } from 'ink';
-import { getStableColor } from '@agent-tracker/core';
+import { getStableColor, TaskReader } from '@agent-tracker/core';
+// Cache for task summaries to avoid re-reading on every render
+function getTaskSummariesForSessions(sessions) {
+    const reader = new TaskReader();
+    const summaries = new Map();
+    for (const session of sessions) {
+        const summary = reader.getTaskSummaryForSession(session.transcriptPath);
+        if (summary) {
+            summaries.set(session.id, summary);
+        }
+    }
+    return summaries;
+}
 export function SessionList({ sessions, selectedSessionId }) {
+    // Compute task summaries for all sessions
+    const taskSummaries = useMemo(() => {
+        return getTaskSummariesForSessions(sessions);
+    }, [sessions]);
     if (sessions.length === 0) {
         return (React.createElement(Box, { flexDirection: "column", padding: 1 },
             React.createElement(Text, { dimColor: true }, "No active sessions"),
@@ -13,9 +29,9 @@ export function SessionList({ sessions, selectedSessionId }) {
                 "Sessions (",
                 sessions.length,
                 ")")),
-        sessions.map((session) => (React.createElement(SessionListItem, { key: session.id, session: session, isSelected: session.id === selectedSessionId })))));
+        sessions.map((session) => (React.createElement(SessionListItem, { key: session.id, session: session, isSelected: session.id === selectedSessionId, taskSummary: taskSummaries.get(session.id) || null })))));
 }
-function SessionListItem({ session, isSelected }) {
+function SessionListItem({ session, isSelected, taskSummary }) {
     const getStatusColor = (status, awaitingInput) => {
         if (awaitingInput)
             return 'magenta';
@@ -75,7 +91,16 @@ function SessionListItem({ session, isSelected }) {
                     React.createElement(Text, { bold: isSelected, backgroundColor: isSelected ? undefined : branchColors.backgroundColor, color: isSelected ? 'cyan' : branchColors.foregroundColor }, isSelected ? branch : ` ${branch} `))),
                 tabName && (React.createElement(React.Fragment, null,
                     React.createElement(Text, { dimColor: true }, " \u2013 "),
-                    React.createElement(Text, { dimColor: true }, tabName)))),
+                    React.createElement(Text, { dimColor: true }, tabName))),
+                taskSummary && (React.createElement(React.Fragment, null,
+                    React.createElement(Text, { dimColor: true }, " "),
+                    React.createElement(Text, { backgroundColor: "#4d3800", color: "#d29922" },
+                        ' ',
+                        taskSummary.inProgress > 0 ? `*${taskSummary.inProgress}` : '',
+                        taskSummary.inProgress > 0 && taskSummary.pending > 0 ? '/' : '',
+                        taskSummary.pending > 0 ? `${taskSummary.pending}p` : '',
+                        taskSummary.inProgress === 0 && taskSummary.pending === 0 ? `${taskSummary.completed}✓` : '',
+                        ' ')))),
             session.workSummary && (React.createElement(Box, { marginLeft: 2, minWidth: 0 },
                 React.createElement(Text, { dimColor: true, italic: true, wrap: "truncate-end" }, session.workSummary))),
             React.createElement(Box, { marginLeft: 2, minWidth: 0 },

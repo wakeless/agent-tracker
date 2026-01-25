@@ -424,7 +424,7 @@ function getResponse() {
   return event.res;
 }
 async function getStartManifest(matchedRoutes) {
-  const { tsrStartManifest } = await import("./assets/_tanstack-start-manifest_v-BpgGIDNN.js");
+  const { tsrStartManifest } = await import("./assets/_tanstack-start-manifest_v-D89fWsRY.js");
   const startManifest = tsrStartManifest();
   const rootRoute = startManifest.routes[rootRouteId] = startManifest.routes[rootRouteId] || {};
   rootRoute.assets = rootRoute.assets || [];
@@ -582,7 +582,13 @@ function createMultiplexedStream(jsonStream, rawStreams) {
     }
   });
 }
-const manifest = { "ad6eeb84811df52eebb1cfc8f7bf200bc622506b4c6ce5cdde66c0dae0c9e6f3": {
+const manifest = { "02f2634e2d29bb66556ea859fdb4dd40c962defee00971c7ad724454be68fb6e": {
+  functionName: "getPlans_createServerFn_handler",
+  importer: () => import("./assets/plans-BfEZT_Sl.js")
+}, "a186dc17780a3a9b52a89fc8d49499e923dd202d120c2f377a43984df1de9bb1": {
+  functionName: "getPlan_createServerFn_handler",
+  importer: () => import("./assets/plans-BfEZT_Sl.js")
+}, "ad6eeb84811df52eebb1cfc8f7bf200bc622506b4c6ce5cdde66c0dae0c9e6f3": {
   functionName: "getSessions_createServerFn_handler",
   importer: () => import("./assets/sessions-BqxYswMr.js")
 }, "3e1f35775f699a8089bc6d510c4b03455b3fd1cba241bad3e4fe50d994fbda49": {
@@ -591,12 +597,12 @@ const manifest = { "ad6eeb84811df52eebb1cfc8f7bf200bc622506b4c6ce5cdde66c0dae0c9
 }, "cc944ffcc7a5a6aac7c3e979333a83e0bede32cf5f6039b21ebbf4fbbac9ec02": {
   functionName: "getTranscript_createServerFn_handler",
   importer: () => import("./assets/sessions-BqxYswMr.js")
-}, "02f2634e2d29bb66556ea859fdb4dd40c962defee00971c7ad724454be68fb6e": {
-  functionName: "getPlans_createServerFn_handler",
-  importer: () => import("./assets/plans-BfEZT_Sl.js")
-}, "a186dc17780a3a9b52a89fc8d49499e923dd202d120c2f377a43984df1de9bb1": {
-  functionName: "getPlan_createServerFn_handler",
-  importer: () => import("./assets/plans-BfEZT_Sl.js")
+}, "0587b41053374c52926570f3181752716da6ab43b5a3dfecc4784e8d2d07bed2": {
+  functionName: "getTaskSummaries_createServerFn_handler",
+  importer: () => import("./assets/tasks-CZbDHYAi.js")
+}, "86ba43f8fc73ef9aac25b2640582873705569218c018298b70cc130cae503bd0": {
+  functionName: "getTasksForConversation_createServerFn_handler",
+  importer: () => import("./assets/tasks-CZbDHYAi.js")
 } };
 async function getServerFnById(id) {
   const serverFnInfo = manifest[id];
@@ -913,7 +919,7 @@ function getStartResponseHeaders(opts) {
 let entriesPromise;
 let manifestPromise;
 async function loadEntries() {
-  const routerEntry = await import("./assets/router-BZOfhc0g.js").then((n) => n.r);
+  const routerEntry = await import("./assets/router-DS6JJFaw.js").then((n) => n.r);
   const startEntry = await import("./assets/start-HYkvq4Ni.js");
   return { startEntry, routerEntry };
 }

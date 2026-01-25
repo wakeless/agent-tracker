@@ -1,7 +1,7 @@
 // Main entry point for @agent-tracker/core
 // Re-exports all public APIs
 // Services
-export { ActivityStore, activityReducer, EventWatcher, ExploreTrackerService, ProjectScanner, SessionTrackerService, TranscriptReader, TranscriptWatcher, PlanReader, } from './services/index.js';
+export { ActivityStore, activityReducer, EventWatcher, ExploreTrackerService, ProjectScanner, SessionTrackerService, TranscriptReader, TranscriptWatcher, PlanReader, TaskReader, } from './services/index.js';
 // Types
 export { actions, isSystemMessage, } from './types/index.js';
 // Utils
