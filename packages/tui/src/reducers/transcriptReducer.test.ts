@@ -11,11 +11,16 @@ import { ParsedTranscriptEntry } from '@agent-tracker/core';
 
 // Helper to create test entries
 function createEntry(uuid: string, type: ParsedTranscriptEntry['type']): ParsedTranscriptEntry {
+  // System message types that should be filtered out when showSystemEntries is false
+  const systemTypes = ['system', 'meta', 'file-history', 'thinking'];
+  const isSystemMessage = systemTypes.includes(type);
+
   return {
     uuid,
     type,
     content: `${type} content`,
     timestamp: new Date(),
+    isSystemMessage,
   };
 }
 
@@ -36,7 +41,7 @@ describe('transcriptReducer', () => {
     expect(state.entries).toHaveLength(4);
     // System entries hidden by default
     expect(state.seenFilteredCount).toBe(3); // user, assistant, user (no system)
-    expect(state.selectedIndex).toBe(2); // Last visible entry
+    expect(state.selectedUuid).toBe('4'); // Last visible entry (uuid '4')
     expect(state.showSystemEntries).toBe(false);
   });
 
@@ -53,9 +58,8 @@ describe('transcriptReducer', () => {
     let state: TranscriptState = {
       ...initialState,
       entries,
-      selectedIndex: 1, // Pointing to 'assistant' (index 1 in filtered, uuid '3')
       seenFilteredCount: 3, // user, assistant, user visible
-      selectedUuid: '3',
+      selectedUuid: '3', // Pointing to 'assistant'
       showSystemEntries: false,
     };
 
@@ -66,8 +70,6 @@ describe('transcriptReducer', () => {
     expect(state.seenFilteredCount).toBe(5); // All entries now visible
     // Should still be on the same message (uuid '3')
     expect(state.selectedUuid).toBe('3');
-    // Index 2 now points to assistant (uuid '3') in full list
-    expect(state.selectedIndex).toBe(2);
 
     // Toggle back OFF
     state = transcriptReducer(state, { type: 'TOGGLE_SYSTEM_ENTRIES' });
@@ -76,7 +78,6 @@ describe('transcriptReducer', () => {
     expect(state.seenFilteredCount).toBe(3); // Back to filtered
     // Should still be on same message (uuid '3')
     expect(state.selectedUuid).toBe('3');
-    expect(state.selectedIndex).toBe(1); // Back to index 1 in filtered list
   });
 
   it('should append entries without changing seen count', () => {
@@ -115,22 +116,19 @@ describe('transcriptReducer', () => {
     let state: TranscriptState = {
       ...initialState,
       entries,
-      selectedIndex: 0, // At first entry
       seenFilteredCount: 1, // Only first entry seen
-      selectedUuid: '1',
+      selectedUuid: '1', // At first entry
       showSystemEntries: false,
     };
 
     // Navigate down when at bottom with hidden entries - should reveal and advance
     state = transcriptReducer(state, { type: 'NAVIGATE_DOWN' });
     expect(state.seenFilteredCount).toBe(3); // All entries now visible
-    expect(state.selectedIndex).toBe(1); // Moved to next entry
-    expect(state.selectedUuid).toBe('2');
+    expect(state.selectedUuid).toBe('2'); // Moved to next entry
 
     // Navigate down again - normal navigation
     state = transcriptReducer(state, { type: 'NAVIGATE_DOWN' });
-    expect(state.selectedIndex).toBe(2); // Moved to last entry
-    expect(state.selectedUuid).toBe('3');
+    expect(state.selectedUuid).toBe('3'); // Moved to last entry
   });
 
   it('should jump to latest and reveal all entries', () => {
@@ -143,7 +141,6 @@ describe('transcriptReducer', () => {
     let state: TranscriptState = {
       ...initialState,
       entries,
-      selectedIndex: 0,
       seenFilteredCount: 1, // Only first entry seen
       selectedUuid: '1',
       showSystemEntries: false,
@@ -152,8 +149,7 @@ describe('transcriptReducer', () => {
     state = transcriptReducer(state, { type: 'JUMP_TO_LATEST' });
 
     expect(state.seenFilteredCount).toBe(3); // All revealed
-    expect(state.selectedIndex).toBe(2); // At last entry
-    expect(state.selectedUuid).toBe('3');
+    expect(state.selectedUuid).toBe('3'); // At last entry
   });
 
   it('should filter entries correctly with selectors', () => {
