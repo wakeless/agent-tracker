@@ -1,1 +1,0 @@
-{"version":3,"file":"EditDetailView.d.ts","sourceRoot":"","sources":["../../src/components/EditDetailView.tsx"],"names":[],"mappings":"AAAA,OAAO,KAAK,MAAM,OAAO,CAAC;AAG1B,OAAO,EAAE,SAAS,EAAE,MAAM,6BAA6B,CAAC;AAExD,MAAM,WAAW,mBAAmB;IAClC,SAAS,EAAE,SAAS,CAAC;CACtB;AAED;;GAEG;AACH,wBAAgB,cAAc,CAAC,EAAE,SAAS,EAAE,EAAE,mBAAmB,qBAoDhE"}

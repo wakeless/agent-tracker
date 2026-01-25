@@ -5,8 +5,10 @@
 export {
   ActivityStore,
   activityReducer,
+  EventWatcher,
   ExploreTrackerService,
   ProjectScanner,
+  SessionTrackerService,
   TranscriptReader,
   TranscriptWatcher,
 } from './services/index.js';
@@ -14,10 +16,12 @@ export {
 export type {
   ActivityState,
   ActivityStoreConfig,
+  EventWatcherOptions,
   ExploreTrackerOptions,
   SessionCounts,
   ProjectScannerOptions,
   SessionIndexEntry,
+  SessionTrackerOptions,
   TranscriptWatcherOptions,
 } from './services/index.js';
 
