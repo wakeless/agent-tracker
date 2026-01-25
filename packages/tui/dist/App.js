@@ -10,6 +10,8 @@ import { EditDetailView } from './components/EditDetailView.js';
 import { WriteDetailView } from './components/WriteDetailView.js';
 import { BashDetailView } from './components/BashDetailView.js';
 import { GrepDetailView } from './components/GrepDetailView.js';
+import { PlansListView } from './components/PlansListView.js';
+import { PlanFileDetailView } from './components/PlanFileDetailView.js';
 import { EmptyState } from './components/EmptyState.js';
 import { useNavigation } from './hooks/useNavigation.js';
 export function App() {
@@ -76,12 +78,22 @@ export function App() {
     // 1. Initial navigation state (useNavigation hook)
     // 2. User navigation (j/k/Enter in SessionListView)
     // 3. Deleted session handling (at render time below)
-    // Global keyboard navigation - only ESC (pop) and quit
+    // Global keyboard navigation - ESC (pop), Tab (toggle views), and quit
     // Component-specific navigation (j/k/Enter) is handled by each view
     useInput((input, key) => {
         if (key.escape && navigation.depth > 1) {
-            // Pop back one level (but not from list view)
+            // Pop back one level (but not from list/plans-list view)
             navigation.pop();
+        }
+        else if (key.tab && navigation.depth === 1) {
+            // Tab to toggle between sessions and plans at top level
+            const currentView = navigation.currentView;
+            if (currentView.type === 'list') {
+                navigation.switchToPlans();
+            }
+            else if (currentView.type === 'plans-list') {
+                navigation.switchToSessions();
+            }
         }
         else if (input === 'q' || (key.ctrl && input === 'c')) {
             process.exit(0);
@@ -183,6 +195,14 @@ export function App() {
         case 'grep-detail': {
             const grepDetailView = currentView;
             return (React.createElement(GrepDetailView, { grepInput: grepDetailView.grepInput, toolResult: grepDetailView.toolResult }));
+        }
+        case 'plans-list': {
+            const plansListView = currentView;
+            return (React.createElement(PlansListView, { selectedPlanFilename: plansListView.selectedPlanFilename, onSelectPlan: navigation.selectPlan, onViewPlan: (planFile, content) => navigation.pushPlanFileDetail(planFile, content), onSwitchToSessions: navigation.switchToSessions }));
+        }
+        case 'plan-file-detail': {
+            const planFileDetailView = currentView;
+            return (React.createElement(PlanFileDetailView, { planFile: planFileDetailView.planFile, planContent: planFileDetailView.planContent, onBack: navigation.pop }));
         }
         default:
             // Should never happen due to TypeScript exhaustiveness checking

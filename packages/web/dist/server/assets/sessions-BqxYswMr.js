@@ -1,8 +1,9 @@
-import { T as TSS_SERVER_FUNCTION, c as createServerFn } from "../server.js";
+import { c as createServerRpc } from "./createServerRpc-Bd3B-Ah9.js";
 import * as fs from "fs";
 import * as path from "path";
 import { homedir } from "os";
 import * as readline from "readline";
+import { c as createServerFn } from "../server.js";
 import "@tanstack/history";
 import "@tanstack/router-core/ssr/client";
 import "@tanstack/router-core";
@@ -14,14 +15,6 @@ import "seroval";
 import "react/jsx-runtime";
 import "@tanstack/react-router/ssr/server";
 import "@tanstack/react-router";
-const createServerRpc = (serverFnMeta, splitImportFn) => {
-  const url = "/_serverFn/" + serverFnMeta.id;
-  return Object.assign(splitImportFn, {
-    url,
-    serverFnMeta,
-    [TSS_SERVER_FUNCTION]: true
-  });
-};
 const initialState = {
   sessions: /* @__PURE__ */ new Map(),
   recentActivity: [],
@@ -1391,10 +1384,15 @@ const getSession_createServerFn_handler = createServerRpc({
 }, (opts, signal) => getSession.__executeServer(opts, signal));
 const getSession = createServerFn({
   method: "GET"
-}).handler(getSession_createServerFn_handler, async (id) => {
+}).handler(getSession_createServerFn_handler, async (ctx) => {
+  const id = ctx.data;
+  console.log("[getSession] Input ID:", id);
   const svc = getService();
+  svc.updateSessionStatuses();
   const sessions = svc.getSessions();
+  console.log("[getSession] Total sessions:", sessions.length);
   const session = sessions.find((s) => s.id === id) || null;
+  console.log("[getSession] Found:", !!session);
   return {
     session: session ? serializeSession(session) : null
   };
@@ -1406,18 +1404,37 @@ const getTranscript_createServerFn_handler = createServerRpc({
 }, (opts, signal) => getTranscript.__executeServer(opts, signal));
 const getTranscript = createServerFn({
   method: "GET"
-}).handler(getTranscript_createServerFn_handler, async (transcriptPath) => {
+}).handler(getTranscript_createServerFn_handler, async (ctx) => {
+  const {
+    path: transcriptPath,
+    limit = 50,
+    before
+  } = ctx.data;
   try {
     const reader = new TranscriptReader();
-    const entries = await reader.readTranscript(transcriptPath);
+    const allEntries = await reader.readTranscript(transcriptPath);
+    const userEntries = allEntries.filter((e) => e.type !== "system" && e.type !== "file-history" && e.type !== "meta");
+    const total = userEntries.length;
+    const sorted = [...userEntries].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    let filtered = sorted;
+    if (before) {
+      const cursorTime = new Date(before).getTime();
+      filtered = sorted.filter((e) => new Date(e.timestamp).getTime() < cursorTime);
+    }
+    const entries = filtered.slice(0, limit);
+    const hasMore = filtered.length > limit;
+    const oldestTimestamp = entries.length > 0 ? new Date(entries[entries.length - 1].timestamp).toISOString() : void 0;
     return {
       entries: JSON.parse(JSON.stringify(entries)),
-      total: entries.length
+      total,
+      hasMore,
+      oldestTimestamp
     };
   } catch {
     return {
       entries: [],
-      total: 0
+      total: 0,
+      hasMore: false
     };
   }
 });

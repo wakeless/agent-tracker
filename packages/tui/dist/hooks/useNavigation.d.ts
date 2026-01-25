@@ -1,4 +1,4 @@
-import { ParsedTranscriptEntry } from '@agent-tracker/core';
+import { ParsedTranscriptEntry, PlanFile } from '@agent-tracker/core';
 import { EditInput, WriteInput, BashInput, GrepInput } from '../components/tools/ToolDisplayProps.js';
 /**
  * Navigation Stack Items
@@ -53,6 +53,13 @@ export type NavStackItem = {
     grepEntryUuid: string;
     grepInput: GrepInput;
     toolResult: ParsedTranscriptEntry | null;
+} | {
+    type: 'plans-list';
+    selectedPlanFilename: string | null;
+} | {
+    type: 'plan-file-detail';
+    planFile: PlanFile;
+    planContent: string;
 };
 /**
  * Navigation State
@@ -113,6 +120,17 @@ export type NavAction = {
 } | {
     type: 'UPDATE_TRANSCRIPT_POSITION';
     selectedUuid: string;
+} | {
+    type: 'SWITCH_TO_PLANS';
+} | {
+    type: 'SWITCH_TO_SESSIONS';
+} | {
+    type: 'PUSH_PLAN_FILE_DETAIL';
+    planFile: PlanFile;
+    planContent: string;
+} | {
+    type: 'UPDATE_PLAN_SELECTION';
+    planFilename: string | null;
 };
 /**
  * Navigation Reducer
@@ -146,6 +164,10 @@ export declare function useNavigation(initialSessionId: string | null): {
     pushGrepDetail: (sessionId: string, grepEntryUuid: string, grepInput: GrepInput, toolResult: ParsedTranscriptEntry | null) => void;
     pop: () => void;
     updateTranscriptPosition: (selectedUuid: string) => void;
+    switchToPlans: () => void;
+    switchToSessions: () => void;
+    pushPlanFileDetail: (planFile: PlanFile, planContent: string) => void;
+    selectPlan: (planFilename: string | null) => void;
 };
 /**
  * Type guard to check if current view is list view
@@ -194,5 +216,17 @@ export declare function isBashDetailView(view: NavStackItem): view is Extract<Na
  */
 export declare function isGrepDetailView(view: NavStackItem): view is Extract<NavStackItem, {
     type: 'grep-detail';
+}>;
+/**
+ * Type guard to check if current view is plans list view
+ */
+export declare function isPlansListView(view: NavStackItem): view is Extract<NavStackItem, {
+    type: 'plans-list';
+}>;
+/**
+ * Type guard to check if current view is plan file detail view
+ */
+export declare function isPlanFileDetailView(view: NavStackItem): view is Extract<NavStackItem, {
+    type: 'plan-file-detail';
 }>;
 //# sourceMappingURL=useNavigation.d.ts.map

@@ -1,9 +1,10 @@
 import { jsx, jsxs } from "react/jsx-runtime";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { a as getSession, b as getTranscript } from "./sessions-ZQQJR4wt.js";
+import { a as getSession, b as getTranscript } from "./sessions-B_9RbuyW.js";
 import { useState, useCallback, useEffect } from "react";
-import { a as Route } from "./router-B2l7ALhj.js";
+import { b as Route } from "./router-BZOfhc0g.js";
+import "./createSsrRpc-CVg2UDl0.js";
 import "../server.js";
 import "@tanstack/history";
 import "@tanstack/router-core/ssr/client";
@@ -25,14 +26,18 @@ function TranscriptPage() {
     isLoading: sessionLoading
   } = useQuery({
     queryKey: ["session", sessionId],
-    queryFn: () => getSession(sessionId)
+    queryFn: () => getSession({
+      data: sessionId
+    })
   });
   const {
     data: transcriptData,
     isLoading: transcriptLoading
   } = useQuery({
     queryKey: ["transcript", sessionData?.session?.transcriptPath],
-    queryFn: () => sessionData?.session?.transcriptPath ? getTranscript(sessionData.session.transcriptPath) : Promise.resolve({
+    queryFn: () => sessionData?.session?.transcriptPath ? getTranscript({
+      data: sessionData.session.transcriptPath
+    }) : Promise.resolve({
       entries: [],
       total: 0
     }),
@@ -190,9 +195,10 @@ function TranscriptEntry({
     if (entry.type === "meta") return "Meta";
     return "Assistant";
   };
-  const lines = entry.content.split("\n");
+  const contentStr = typeof entry.content === "string" ? entry.content : JSON.stringify(entry.content, null, 2);
+  const lines = contentStr.split("\n");
   const lineCount = lines.length;
-  const displayContent = isExpanded ? entry.content : lines.slice(0, 3).join("\n");
+  const displayContent = isExpanded ? contentStr : lines.slice(0, 3).join("\n");
   const hasMore = lineCount > 3;
   return /* @__PURE__ */ jsxs("div", { id: `entry-${index}`, onClick: onSelect, onDoubleClick: () => setIsExpanded(!isExpanded), style: {
     padding: "12px 16px",

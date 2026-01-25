@@ -1,7 +1,8 @@
 import { jsx, jsxs } from "react/jsx-runtime";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { g as getSessions } from "./sessions-ZQQJR4wt.js";
+import { g as getSessions } from "./sessions-B_9RbuyW.js";
+import "./createSsrRpc-CVg2UDl0.js";
 import "../server.js";
 import "@tanstack/history";
 import "@tanstack/router-core/ssr/client";

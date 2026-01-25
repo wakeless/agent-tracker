@@ -11,6 +11,7 @@ export {
   SessionTrackerService,
   TranscriptReader,
   TranscriptWatcher,
+  PlanReader,
 } from './services/index.js';
 
 export type {
@@ -23,6 +24,8 @@ export type {
   SessionIndexEntry,
   SessionTrackerOptions,
   TranscriptWatcherOptions,
+  PlanFile,
+  PlanReaderOptions,
 } from './services/index.js';
 
 // Types
@@ -85,9 +88,13 @@ export {
   getStableColor,
   getStableTextColor,
   parseITermSessionId,
+  parsePlanMarkdown,
 } from './utils/index.js';
 
 export type {
   RGB,
   ITermSessionParts,
+  CodeBlock,
+  PlanSection,
+  ParsedPlan,
 } from './utils/index.js';

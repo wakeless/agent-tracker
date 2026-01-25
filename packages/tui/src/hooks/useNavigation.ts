@@ -1,5 +1,5 @@
 import { useReducer, useCallback, useMemo } from 'react';
-import { ParsedTranscriptEntry } from '@agent-tracker/core';
+import { ParsedTranscriptEntry, PlanFile } from '@agent-tracker/core';
 import { EditInput, WriteInput, BashInput, GrepInput } from '../components/tools/ToolDisplayProps.js';
 
 /**
@@ -60,6 +60,16 @@ export type NavStackItem =
       grepEntryUuid: string;
       grepInput: GrepInput;
       toolResult: ParsedTranscriptEntry | null;
+    }
+  // Plans navigation (parallel to sessions)
+  | {
+      type: 'plans-list';
+      selectedPlanFilename: string | null;
+    }
+  | {
+      type: 'plan-file-detail';
+      planFile: PlanFile;
+      planContent: string;
     };
 
 /**
@@ -125,7 +135,15 @@ export type NavAction =
   | { type: 'UPDATE_SESSION_SELECTION'; sessionId: string | null }
 
   // Update transcript scroll position
-  | { type: 'UPDATE_TRANSCRIPT_POSITION'; selectedUuid: string };
+  | { type: 'UPDATE_TRANSCRIPT_POSITION'; selectedUuid: string }
+
+  // Switch between sessions and plans views
+  | { type: 'SWITCH_TO_PLANS' }
+  | { type: 'SWITCH_TO_SESSIONS' }
+
+  // Plans navigation
+  | { type: 'PUSH_PLAN_FILE_DETAIL'; planFile: PlanFile; planContent: string }
+  | { type: 'UPDATE_PLAN_SELECTION'; planFilename: string | null };
 
 /**
  * Navigation Reducer
@@ -261,6 +279,45 @@ export function navigationReducer(state: NavState, action: NavAction): NavState 
       };
     }
 
+    case 'SWITCH_TO_PLANS':
+      // Replace entire stack with plans-list view
+      return {
+        stack: [{ type: 'plans-list', selectedPlanFilename: null }],
+      };
+
+    case 'SWITCH_TO_SESSIONS':
+      // Replace entire stack with session list view
+      return {
+        stack: [{ type: 'list', selectedSessionId: null }],
+      };
+
+    case 'PUSH_PLAN_FILE_DETAIL':
+      return {
+        stack: [
+          ...state.stack,
+          {
+            type: 'plan-file-detail',
+            planFile: action.planFile,
+            planContent: action.planContent,
+          },
+        ],
+      };
+
+    case 'UPDATE_PLAN_SELECTION': {
+      // Only update if top of stack is plans-list view
+      const top = state.stack[state.stack.length - 1];
+      if (top.type !== 'plans-list') {
+        return state;
+      }
+
+      return {
+        stack: [
+          ...state.stack.slice(0, -1),
+          { type: 'plans-list', selectedPlanFilename: action.planFilename },
+        ],
+      };
+    }
+
     default:
       return state;
   }
@@ -374,6 +431,22 @@ export function useNavigation(initialSessionId: string | null) {
     []
   );
 
+  // Plans navigation methods
+  const switchToPlans = useCallback(() => dispatch({ type: 'SWITCH_TO_PLANS' }), []);
+
+  const switchToSessions = useCallback(() => dispatch({ type: 'SWITCH_TO_SESSIONS' }), []);
+
+  const pushPlanFileDetail = useCallback(
+    (planFile: PlanFile, planContent: string) =>
+      dispatch({ type: 'PUSH_PLAN_FILE_DETAIL', planFile, planContent }),
+    []
+  );
+
+  const selectPlan = useCallback(
+    (planFilename: string | null) => dispatch({ type: 'UPDATE_PLAN_SELECTION', planFilename }),
+    []
+  );
+
   // Return a stable object reference using useMemo
   return useMemo(
     () => ({
@@ -383,7 +456,7 @@ export function useNavigation(initialSessionId: string | null) {
       stack: state.stack,
       dispatch,
 
-      // Convenience methods (now stable)
+      // Session convenience methods (now stable)
       selectSession,
       pushTranscript,
       pushToolDetail,
@@ -394,8 +467,14 @@ export function useNavigation(initialSessionId: string | null) {
       pushGrepDetail,
       pop,
       updateTranscriptPosition,
+
+      // Plans navigation methods
+      switchToPlans,
+      switchToSessions,
+      pushPlanFileDetail,
+      selectPlan,
     }),
-    [currentView, depth, state.stack, dispatch, selectSession, pushTranscript, pushToolDetail, pushPlanDetail, pushEditDetail, pushWriteDetail, pushBashDetail, pushGrepDetail, pop, updateTranscriptPosition]
+    [currentView, depth, state.stack, dispatch, selectSession, pushTranscript, pushToolDetail, pushPlanDetail, pushEditDetail, pushWriteDetail, pushBashDetail, pushGrepDetail, pop, updateTranscriptPosition, switchToPlans, switchToSessions, pushPlanFileDetail, selectPlan]
   );
 }
 
@@ -467,4 +546,22 @@ export function isGrepDetailView(
   view: NavStackItem
 ): view is Extract<NavStackItem, { type: 'grep-detail' }> {
   return view.type === 'grep-detail';
+}
+
+/**
+ * Type guard to check if current view is plans list view
+ */
+export function isPlansListView(
+  view: NavStackItem
+): view is Extract<NavStackItem, { type: 'plans-list' }> {
+  return view.type === 'plans-list';
+}
+
+/**
+ * Type guard to check if current view is plan file detail view
+ */
+export function isPlanFileDetailView(
+  view: NavStackItem
+): view is Extract<NavStackItem, { type: 'plan-file-detail' }> {
+  return view.type === 'plan-file-detail';
 }

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Box, Text } from 'ink';
-import type { PlanSection as PlanSectionType } from './parsePlanMarkdown.js';
+import type { PlanSection as PlanSectionType } from '@agent-tracker/core';
 
 interface PlanSectionProps {
   section: PlanSectionType;

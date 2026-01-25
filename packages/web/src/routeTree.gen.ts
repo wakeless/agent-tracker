@@ -10,7 +10,9 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as PlansIndexRouteImport } from './routes/plans/index'
 import { Route as SessionsSessionIdRouteImport } from './routes/sessions/$sessionId'
+import { Route as PlansFilenameRouteImport } from './routes/plans/$filename'
 import { Route as SessionsSessionIdTranscriptRouteImport } from './routes/sessions/$sessionId_.transcript'
 
 const IndexRoute = IndexRouteImport.update({
@@ -18,9 +20,19 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PlansIndexRoute = PlansIndexRouteImport.update({
+  id: '/plans/',
+  path: '/plans/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SessionsSessionIdRoute = SessionsSessionIdRouteImport.update({
   id: '/sessions/$sessionId',
   path: '/sessions/$sessionId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlansFilenameRoute = PlansFilenameRouteImport.update({
+  id: '/plans/$filename',
+  path: '/plans/$filename',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SessionsSessionIdTranscriptRoute =
@@ -32,35 +44,55 @@ const SessionsSessionIdTranscriptRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/plans/$filename': typeof PlansFilenameRoute
   '/sessions/$sessionId': typeof SessionsSessionIdRoute
+  '/plans/': typeof PlansIndexRoute
   '/sessions/$sessionId/transcript': typeof SessionsSessionIdTranscriptRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/plans/$filename': typeof PlansFilenameRoute
   '/sessions/$sessionId': typeof SessionsSessionIdRoute
+  '/plans': typeof PlansIndexRoute
   '/sessions/$sessionId/transcript': typeof SessionsSessionIdTranscriptRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/plans/$filename': typeof PlansFilenameRoute
   '/sessions/$sessionId': typeof SessionsSessionIdRoute
+  '/plans/': typeof PlansIndexRoute
   '/sessions/$sessionId_/transcript': typeof SessionsSessionIdTranscriptRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/sessions/$sessionId' | '/sessions/$sessionId/transcript'
+  fullPaths:
+    | '/'
+    | '/plans/$filename'
+    | '/sessions/$sessionId'
+    | '/plans/'
+    | '/sessions/$sessionId/transcript'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/sessions/$sessionId' | '/sessions/$sessionId/transcript'
+  to:
+    | '/'
+    | '/plans/$filename'
+    | '/sessions/$sessionId'
+    | '/plans'
+    | '/sessions/$sessionId/transcript'
   id:
     | '__root__'
     | '/'
+    | '/plans/$filename'
     | '/sessions/$sessionId'
+    | '/plans/'
     | '/sessions/$sessionId_/transcript'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  PlansFilenameRoute: typeof PlansFilenameRoute
   SessionsSessionIdRoute: typeof SessionsSessionIdRoute
+  PlansIndexRoute: typeof PlansIndexRoute
   SessionsSessionIdTranscriptRoute: typeof SessionsSessionIdTranscriptRoute
 }
 
@@ -73,11 +105,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/plans/': {
+      id: '/plans/'
+      path: '/plans'
+      fullPath: '/plans/'
+      preLoaderRoute: typeof PlansIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sessions/$sessionId': {
       id: '/sessions/$sessionId'
       path: '/sessions/$sessionId'
       fullPath: '/sessions/$sessionId'
       preLoaderRoute: typeof SessionsSessionIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/plans/$filename': {
+      id: '/plans/$filename'
+      path: '/plans/$filename'
+      fullPath: '/plans/$filename'
+      preLoaderRoute: typeof PlansFilenameRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sessions/$sessionId_/transcript': {
@@ -92,7 +138,9 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  PlansFilenameRoute: PlansFilenameRoute,
   SessionsSessionIdRoute: SessionsSessionIdRoute,
+  PlansIndexRoute: PlansIndexRoute,
   SessionsSessionIdTranscriptRoute: SessionsSessionIdTranscriptRoute,
 }
 export const routeTree = rootRouteImport

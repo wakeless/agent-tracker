@@ -7,4 +7,5 @@ export { SessionTrackerService } from './SessionTrackerService.js';
 // Note: SessionCounts is exported from ExploreTrackerService (interfaces are identical)
 export { TranscriptReader } from './TranscriptReader.js';
 export { TranscriptWatcher } from './TranscriptWatcher.js';
+export { PlanReader } from './PlanReader.js';
 //# sourceMappingURL=index.js.map

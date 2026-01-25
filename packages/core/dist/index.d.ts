@@ -1,7 +1,7 @@
-export { ActivityStore, activityReducer, EventWatcher, ExploreTrackerService, ProjectScanner, SessionTrackerService, TranscriptReader, TranscriptWatcher, } from './services/index.js';
-export type { ActivityState, ActivityStoreConfig, EventWatcherOptions, ExploreTrackerOptions, SessionCounts, ProjectScannerOptions, SessionIndexEntry, SessionTrackerOptions, TranscriptWatcherOptions, } from './services/index.js';
+export { ActivityStore, activityReducer, EventWatcher, ExploreTrackerService, ProjectScanner, SessionTrackerService, TranscriptReader, TranscriptWatcher, PlanReader, } from './services/index.js';
+export type { ActivityState, ActivityStoreConfig, EventWatcherOptions, ExploreTrackerOptions, SessionCounts, ProjectScannerOptions, SessionIndexEntry, SessionTrackerOptions, TranscriptWatcherOptions, PlanFile, PlanReaderOptions, } from './services/index.js';
 export { actions, isSystemMessage, } from './types/index.js';
 export type { ITermInfo, DockerInfo, GitInfo, TerminalInfo, TranscriptFileInfo, BaseEvent, SessionStartEvent, SessionEndEvent, ActivityEvent as EventActivityEvent, SessionEvent, EventHandler, SessionStatus, Session, SessionSnapshot, ActivityEvent, ActionType, Action, SessionStartAction, SessionEndAction, ActivityToolUseAction, ActivityPromptSubmitAction, ActivityStopAction, ActivitySubagentStopAction, ActivityNotificationAction, UpdateSessionStatusesAction, UpdateWorkSummaryAction, ContentBlock, TextBlock, ToolUseBlock, ThinkingBlock, ToolResultBlock, TranscriptEntry, UserMessage, AssistantMessage, Usage, ParsedTranscriptEntry, } from './types/index.js';
-export { filterUserConversation, getRecentConversation, calculateHash, generateRgbFromHash, calculateTextContrast, rgbToHex, getStableColor, getStableTextColor, parseITermSessionId, } from './utils/index.js';
-export type { RGB, ITermSessionParts, } from './utils/index.js';
+export { filterUserConversation, getRecentConversation, calculateHash, generateRgbFromHash, calculateTextContrast, rgbToHex, getStableColor, getStableTextColor, parseITermSessionId, parsePlanMarkdown, } from './utils/index.js';
+export type { RGB, ITermSessionParts, CodeBlock, PlanSection, ParsedPlan, } from './utils/index.js';
 //# sourceMappingURL=index.d.ts.map

@@ -1,17 +1,5 @@
-import { T as TSS_SERVER_FUNCTION, g as getServerFnById, c as createServerFn } from "../server.js";
-const createSsrRpc = (functionId, importer) => {
-  const url = "/_serverFn/" + functionId;
-  const serverFnMeta = { id: functionId };
-  const fn = async (...args) => {
-    const serverFn = await getServerFnById(functionId);
-    return serverFn(...args);
-  };
-  return Object.assign(fn, {
-    url,
-    serverFnMeta,
-    [TSS_SERVER_FUNCTION]: true
-  });
-};
+import { c as createSsrRpc } from "./createSsrRpc-CVg2UDl0.js";
+import { c as createServerFn } from "../server.js";
 const getSessions = createServerFn({
   method: "GET"
 }).handler(createSsrRpc("ad6eeb84811df52eebb1cfc8f7bf200bc622506b4c6ce5cdde66c0dae0c9e6f3"));
