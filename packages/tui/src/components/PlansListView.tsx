@@ -87,7 +87,7 @@ export function PlansListView({
     return parsePlanMarkdown(previewContent);
   }, [previewContent]);
 
-  // Keyboard navigation
+  // Keyboard navigation (Tab is handled globally in App.tsx)
   useInput((input, key) => {
     if (key.upArrow || input === 'k') {
       // Navigate to previous plan
@@ -107,9 +107,6 @@ export function PlansListView({
       if (selectedPlan) {
         onViewPlan(selectedPlan, previewContent);
       }
-    } else if (key.tab || input === 't') {
-      // Tab to switch back to sessions
-      onSwitchToSessions();
     }
   });
 
@@ -211,7 +208,7 @@ export function PlansListView({
       {/* Footer */}
       <Box marginTop={1}>
         <Text dimColor>
-          Navigation: ↑/↓ or j/k • Enter: View plan • Tab: Switch to Sessions • Quit: q or Ctrl+C
+          Navigation: j/k • Enter: View plan • Tab: Cycle views • Quit: q or Ctrl+C
         </Text>
       </Box>
     </Box>

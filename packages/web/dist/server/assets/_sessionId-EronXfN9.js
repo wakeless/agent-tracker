@@ -3,7 +3,8 @@ import { Link } from "@tanstack/react-router";
 import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import { useMemo, useState, useRef, useEffect } from "react";
 import { a as getSession, b as getTranscript } from "./sessions-B_9RbuyW.js";
-import { a as Route } from "./router-DS6JJFaw.js";
+import { a as getTasksForConversation } from "./tasks-lsBLC6vG.js";
+import { a as Route } from "./router-Bo4wYSMH.js";
 import "./createSsrRpc-CVg2UDl0.js";
 import "../server.js";
 import "@tanstack/history";
@@ -15,6 +16,13 @@ import "h3-v2";
 import "tiny-invariant";
 import "seroval";
 import "@tanstack/react-router/ssr/server";
+function extractConversationId(transcriptPath) {
+  const basename = transcriptPath.split("/").pop() || "";
+  if (basename.endsWith(".jsonl")) {
+    return basename.slice(0, -6);
+  }
+  return null;
+}
 const ENTRIES_PER_PAGE = 50;
 function SessionDetailPage() {
   const {
@@ -32,6 +40,19 @@ function SessionDetailPage() {
     refetchInterval: 5e3
   });
   const session = sessionData?.session;
+  const conversationId = session?.transcriptPath ? extractConversationId(session.transcriptPath) : null;
+  const {
+    data: tasksData
+  } = useQuery({
+    queryKey: ["session-tasks", conversationId],
+    queryFn: () => getTasksForConversation({
+      data: conversationId
+    }),
+    enabled: !!conversationId,
+    refetchInterval: 1e4
+    // Refresh every 10 seconds
+  });
+  const tasks = tasksData?.taskSet?.tasks || [];
   const {
     data: transcriptData,
     isLoading: transcriptLoading,
@@ -112,6 +133,7 @@ function SessionDetailPage() {
         fontSize: "11px"
       }, children: "awaiting input" })
     ] }),
+    tasks.length > 0 && /* @__PURE__ */ jsx(TasksSection, { tasks }),
     /* @__PURE__ */ jsx(HighlightsSection, { entries: allEntries }),
     /* @__PURE__ */ jsx(TranscriptSection, { entries: allEntries, total, hasMore: hasNextPage || false, isLoading: transcriptLoading, isFetchingMore: isFetchingNextPage, onLoadMore: fetchNextPage })
   ] });
@@ -318,6 +340,198 @@ function HighlightsSection({
         whiteSpace: "nowrap"
       }, children: highlight.summary })
     ] }, highlight.entry.uuid || index)) })
+  ] });
+}
+function TasksSection({
+  tasks
+}) {
+  const [isExpanded, setIsExpanded] = useState(true);
+  const counts = useMemo(() => ({
+    pending: tasks.filter((t) => t.status === "pending").length,
+    inProgress: tasks.filter((t) => t.status === "in_progress").length,
+    completed: tasks.filter((t) => t.status === "completed").length
+  }), [tasks]);
+  const getStatusConfig = (status) => {
+    switch (status) {
+      case "in_progress":
+        return {
+          color: "#d29922",
+          bg: "#4d3800",
+          label: "Active"
+        };
+      case "completed":
+        return {
+          color: "#3fb950",
+          bg: "#1b4721",
+          label: "Done"
+        };
+      default:
+        return {
+          color: "#8b949e",
+          bg: "#21262d",
+          label: "Pending"
+        };
+    }
+  };
+  if (!isExpanded) {
+    return /* @__PURE__ */ jsxs("button", { onClick: () => setIsExpanded(true), style: {
+      display: "flex",
+      alignItems: "center",
+      gap: "12px",
+      width: "100%",
+      padding: "8px 12px",
+      marginBottom: "12px",
+      background: "#161b22",
+      border: "1px solid #4d3800",
+      borderRadius: "6px",
+      cursor: "pointer",
+      color: "#d29922",
+      fontSize: "12px"
+    }, children: [
+      /* @__PURE__ */ jsx("span", { children: "▶" }),
+      /* @__PURE__ */ jsxs("span", { style: {
+        fontWeight: 500
+      }, children: [
+        "Tasks (",
+        tasks.length,
+        "):"
+      ] }),
+      counts.inProgress > 0 && /* @__PURE__ */ jsxs("span", { style: {
+        color: "#d29922"
+      }, children: [
+        counts.inProgress,
+        " active"
+      ] }),
+      counts.pending > 0 && /* @__PURE__ */ jsxs("span", { style: {
+        color: "#8b949e"
+      }, children: [
+        counts.pending,
+        " pending"
+      ] }),
+      counts.completed > 0 && /* @__PURE__ */ jsxs("span", { style: {
+        color: "#3fb950"
+      }, children: [
+        counts.completed,
+        " done"
+      ] })
+    ] });
+  }
+  return /* @__PURE__ */ jsxs("div", { style: {
+    background: "#161b22",
+    borderRadius: "8px",
+    border: "1px solid #4d3800",
+    marginBottom: "12px",
+    overflow: "hidden"
+  }, children: [
+    /* @__PURE__ */ jsxs("div", { style: {
+      padding: "8px 12px",
+      borderBottom: "1px solid #30363d",
+      display: "flex",
+      gap: "12px",
+      alignItems: "center"
+    }, children: [
+      /* @__PURE__ */ jsx("button", { onClick: () => setIsExpanded(false), style: {
+        background: "none",
+        border: "none",
+        color: "#8b949e",
+        cursor: "pointer",
+        padding: "2px",
+        fontSize: "10px"
+      }, children: "▼" }),
+      /* @__PURE__ */ jsxs("span", { style: {
+        fontSize: "13px",
+        fontWeight: 500,
+        color: "#d29922"
+      }, children: [
+        "Tasks (",
+        tasks.length,
+        ")"
+      ] }),
+      /* @__PURE__ */ jsxs("span", { style: {
+        fontSize: "12px",
+        color: "#8b949e"
+      }, children: [
+        counts.inProgress > 0 && /* @__PURE__ */ jsxs("span", { style: {
+          color: "#d29922",
+          marginRight: "8px"
+        }, children: [
+          counts.inProgress,
+          " active"
+        ] }),
+        counts.pending > 0 && /* @__PURE__ */ jsxs("span", { style: {
+          marginRight: "8px"
+        }, children: [
+          counts.pending,
+          " pending"
+        ] }),
+        counts.completed > 0 && /* @__PURE__ */ jsxs("span", { style: {
+          color: "#3fb950"
+        }, children: [
+          counts.completed,
+          " done"
+        ] })
+      ] })
+    ] }),
+    /* @__PURE__ */ jsx("div", { style: {
+      maxHeight: "300px",
+      overflowY: "auto"
+    }, children: tasks.map((task) => {
+      const status = getStatusConfig(task.status);
+      return /* @__PURE__ */ jsxs("div", { style: {
+        padding: "10px 16px",
+        borderBottom: "1px solid #21262d"
+      }, children: [
+        /* @__PURE__ */ jsxs("div", { style: {
+          display: "flex",
+          alignItems: "center",
+          gap: "8px",
+          marginBottom: "4px"
+        }, children: [
+          /* @__PURE__ */ jsxs("span", { style: {
+            color: "#6e7681",
+            fontSize: "12px"
+          }, children: [
+            "#",
+            task.id
+          ] }),
+          /* @__PURE__ */ jsx("span", { style: {
+            padding: "2px 8px",
+            borderRadius: "12px",
+            background: status.bg,
+            color: status.color,
+            fontSize: "11px",
+            fontWeight: 500
+          }, children: status.label }),
+          task.blockedBy.length > 0 && /* @__PURE__ */ jsxs("span", { style: {
+            color: "#f85149",
+            fontSize: "11px"
+          }, children: [
+            "blocked by ",
+            task.blockedBy.join(", ")
+          ] })
+        ] }),
+        /* @__PURE__ */ jsx("div", { style: {
+          fontSize: "13px",
+          color: "#c9d1d9",
+          fontWeight: 500
+        }, children: task.subject }),
+        task.status === "in_progress" && task.activeForm && /* @__PURE__ */ jsx("div", { style: {
+          fontSize: "12px",
+          color: "#d29922",
+          marginTop: "4px"
+        }, children: task.activeForm }),
+        task.description && /* @__PURE__ */ jsx("div", { style: {
+          fontSize: "12px",
+          color: "#8b949e",
+          marginTop: "4px",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          display: "-webkit-box",
+          WebkitLineClamp: 2,
+          WebkitBoxOrient: "vertical"
+        }, children: task.description })
+      ] }, task.id);
+    }) })
   ] });
 }
 function TranscriptSection({

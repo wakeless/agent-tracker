@@ -118,19 +118,19 @@ const $$splitComponentImporter$4 = () => import("./index-DO36fpTI.js");
 const Route$4 = createFileRoute("/plans/")({
   component: lazyRouteComponent($$splitComponentImporter$4, "component")
 });
-const $$splitComponentImporter$3 = () => import("./_conversationId-BBTQKjXq.js");
+const $$splitComponentImporter$3 = () => import("./_conversationId-BO1cvZuv.js");
 const Route$3 = createFileRoute("/tasks/$conversationId")({
   component: lazyRouteComponent($$splitComponentImporter$3, "component")
 });
-const $$splitComponentImporter$2 = () => import("./_sessionId-CTJqkfJ2.js");
+const $$splitComponentImporter$2 = () => import("./_sessionId-EronXfN9.js");
 const Route$2 = createFileRoute("/sessions/$sessionId")({
   component: lazyRouteComponent($$splitComponentImporter$2, "component")
 });
-const $$splitComponentImporter$1 = () => import("./_filename-TwHZtD9T.js");
+const $$splitComponentImporter$1 = () => import("./_filename-Bfx1Qan3.js");
 const Route$1 = createFileRoute("/plans/$filename")({
   component: lazyRouteComponent($$splitComponentImporter$1, "component")
 });
-const $$splitComponentImporter = () => import("./_sessionId_.transcript-CRg-l1CN.js");
+const $$splitComponentImporter = () => import("./_sessionId_.transcript-YFAZhHsq.js");
 const Route = createFileRoute("/sessions/$sessionId_/transcript")({
   component: lazyRouteComponent($$splitComponentImporter, "component")
 });

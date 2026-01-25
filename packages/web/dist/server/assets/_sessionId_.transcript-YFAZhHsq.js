@@ -3,7 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { a as getSession, b as getTranscript } from "./sessions-B_9RbuyW.js";
 import { useState, useCallback, useEffect } from "react";
-import { c as Route } from "./router-DS6JJFaw.js";
+import { c as Route } from "./router-Bo4wYSMH.js";
 import "./createSsrRpc-CVg2UDl0.js";
 import "../server.js";
 import "@tanstack/history";

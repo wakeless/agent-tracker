@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { Box, Text } from 'ink';
 import { Session, getStableColor, TaskReader, TaskSummary } from '@agent-tracker/core';
 
@@ -7,26 +7,34 @@ interface SessionListProps {
   selectedSessionId: string | null;
 }
 
-// Cache for task summaries to avoid re-reading on every render
-function getTaskSummariesForSessions(sessions: Session[]): Map<string, TaskSummary> {
-  const reader = new TaskReader();
-  const summaries = new Map<string, TaskSummary>();
-
-  for (const session of sessions) {
-    const summary = reader.getTaskSummaryForSession(session.transcriptPath);
-    if (summary) {
-      summaries.set(session.id, summary);
-    }
-  }
-
-  return summaries;
-}
-
 export function SessionList({ sessions, selectedSessionId }: SessionListProps) {
-  // Compute task summaries for all sessions
-  const taskSummaries = useMemo(() => {
-    return getTaskSummariesForSessions(sessions);
-  }, [sessions]);
+  // Use a ref to cache task summaries and only update periodically
+  const [taskSummaries, setTaskSummaries] = useState<Map<string, TaskSummary>>(new Map());
+  const lastUpdateRef = useRef<number>(0);
+
+  // Update task summaries periodically (every 30 seconds) or when session list changes significantly
+  useEffect(() => {
+    const now = Date.now();
+    const timeSinceLastUpdate = now - lastUpdateRef.current;
+
+    // Only update if 30+ seconds have passed or first load
+    if (timeSinceLastUpdate < 30000 && lastUpdateRef.current !== 0) {
+      return;
+    }
+
+    const reader = new TaskReader();
+    const summaries = new Map<string, TaskSummary>();
+
+    for (const session of sessions) {
+      const summary = reader.getTaskSummaryForSession(session.transcriptPath);
+      if (summary) {
+        summaries.set(session.id, summary);
+      }
+    }
+
+    setTaskSummaries(summaries);
+    lastUpdateRef.current = now;
+  }, [sessions.length]); // Only re-run when session count changes
 
   if (sessions.length === 0) {
     return (

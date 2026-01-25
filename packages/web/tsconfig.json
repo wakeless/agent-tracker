@@ -14,5 +14,5 @@
     "noEmit": true,
     "types": ["node", "vinxi/types/client"]
   },
-  "include": ["app/**/*", "app.config.ts"]
+  "include": ["app/**/*", "app.config.ts", "src/**/*"]
 }

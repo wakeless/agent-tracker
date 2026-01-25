@@ -220,6 +220,48 @@ class TaskReader {
       lastModified
     };
   }
+  /**
+   * Extract conversation UUID from a transcript path.
+   * Transcript paths follow the pattern: ~/.claude/projects/{project-path}/{uuid}.jsonl
+   * @param transcriptPath Full path to the transcript file
+   * @returns The conversation UUID, or null if not extractable
+   */
+  extractConversationId(transcriptPath) {
+    const basename = path.basename(transcriptPath);
+    if (basename.endsWith(".jsonl")) {
+      return basename.slice(0, -6);
+    }
+    return null;
+  }
+  /**
+   * Get task summary for a session based on its transcript path.
+   * This correlates session transcripts with their task sets.
+   * @param transcriptPath Full path to the session's transcript file
+   * @returns TaskSummary if tasks exist for this session, null otherwise
+   */
+  getTaskSummaryForSession(transcriptPath) {
+    const conversationId = this.extractConversationId(transcriptPath);
+    if (!conversationId) {
+      return null;
+    }
+    const conversationDir = path.join(this.tasksDir, conversationId);
+    if (!fs.existsSync(conversationDir)) {
+      return null;
+    }
+    return this.getTaskSummary(conversationId, conversationDir);
+  }
+  /**
+   * Get all tasks for a session based on its transcript path.
+   * @param transcriptPath Full path to the session's transcript file
+   * @returns Array of tasks, or empty array if not found
+   */
+  getTasksForSession(transcriptPath) {
+    const conversationId = this.extractConversationId(transcriptPath);
+    if (!conversationId) {
+      return [];
+    }
+    return this.getTasksForConversation(conversationId);
+  }
 }
 function serializeTaskSummary(summary) {
   return {

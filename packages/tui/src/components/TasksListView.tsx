@@ -6,7 +6,6 @@ interface TasksListViewProps {
   selectedConversationId: string | null;
   onSelectTaskSet: (conversationId: string | null) => void;
   onViewTaskSet: (conversationId: string) => void;
-  onSwitchToSessions: () => void;
 }
 
 /**
@@ -64,7 +63,6 @@ export function TasksListView({
   selectedConversationId,
   onSelectTaskSet,
   onViewTaskSet,
-  onSwitchToSessions,
 }: TasksListViewProps) {
   const [taskSets, setTaskSets] = useState<TaskSummary[]>([]);
   const [previewTasks, setPreviewTasks] = useState<Task[]>([]);
@@ -93,7 +91,7 @@ export function TasksListView({
     setPreviewTasks(tasks);
   }, [selectedConversationId]);
 
-  // Keyboard navigation
+  // Keyboard navigation (Tab is handled globally in App.tsx)
   useInput((input, key) => {
     if (key.upArrow || input === 'k') {
       const currentIdx = taskSets.findIndex((ts) => ts.conversationId === selectedConversationId);
@@ -107,8 +105,6 @@ export function TasksListView({
       }
     } else if (key.return && selectedConversationId) {
       onViewTaskSet(selectedConversationId);
-    } else if (key.tab || input === 't') {
-      onSwitchToSessions();
     }
   });
 
@@ -238,7 +234,7 @@ export function TasksListView({
       {/* Footer */}
       <Box marginTop={1}>
         <Text dimColor>
-          Navigation: j/k • Enter: View tasks • Tab: Switch views • Quit: q or Ctrl+C
+          Navigation: j/k • Enter: View tasks • Tab: Cycle views • Quit: q or Ctrl+C
         </Text>
       </Box>
     </Box>

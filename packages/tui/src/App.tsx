@@ -338,7 +338,6 @@ export function App() {
           selectedConversationId={tasksListView.selectedConversationId}
           onSelectTaskSet={navigation.selectTaskSet}
           onViewTaskSet={navigation.pushTaskSetDetail}
-          onSwitchToSessions={navigation.switchToSessions}
         />
       );
     }

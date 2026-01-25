@@ -32,7 +32,9 @@
     "docs:dev": "cd website && npm start",
     "docs:build": "cd website && npm run build",
     "docs:serve": "cd website && npm run serve",
-    "clean": "rm -rf packages/*/dist node_modules/.cache"
+    "clean": "rm -rf packages/*/dist node_modules/.cache",
+    "verify:web-auth": "bash scripts/verify-web-auth.sh",
+    "verify:all": "npm run test && npm run verify:web-auth"
   },
   "keywords": [
     "cli",

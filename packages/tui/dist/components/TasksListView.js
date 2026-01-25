@@ -49,7 +49,7 @@ function getStatusColor(status) {
 function getTaskPreview(reader, conversationId) {
     return reader.getTasksForConversation(conversationId).slice(0, 5);
 }
-export function TasksListView({ selectedConversationId, onSelectTaskSet, onViewTaskSet, onSwitchToSessions, }) {
+export function TasksListView({ selectedConversationId, onSelectTaskSet, onViewTaskSet, }) {
     const [taskSets, setTaskSets] = useState([]);
     const [previewTasks, setPreviewTasks] = useState([]);
     // Load task sets on mount
@@ -72,7 +72,7 @@ export function TasksListView({ selectedConversationId, onSelectTaskSet, onViewT
         const tasks = getTaskPreview(reader, selectedConversationId);
         setPreviewTasks(tasks);
     }, [selectedConversationId]);
-    // Keyboard navigation
+    // Keyboard navigation (Tab is handled globally in App.tsx)
     useInput((input, key) => {
         if (key.upArrow || input === 'k') {
             const currentIdx = taskSets.findIndex((ts) => ts.conversationId === selectedConversationId);
@@ -88,9 +88,6 @@ export function TasksListView({ selectedConversationId, onSelectTaskSet, onViewT
         }
         else if (key.return && selectedConversationId) {
             onViewTaskSet(selectedConversationId);
-        }
-        else if (key.tab || input === 't') {
-            onSwitchToSessions();
         }
     });
     const selectedTaskSet = taskSets.find((ts) => ts.conversationId === selectedConversationId) || null;
@@ -170,6 +167,6 @@ export function TasksListView({ selectedConversationId, onSelectTaskSet, onViewT
                         " more"))))) : (React.createElement(Box, null,
                 React.createElement(Text, { dimColor: true }, "Select a task set to preview"))))),
         React.createElement(Box, { marginTop: 1 },
-            React.createElement(Text, { dimColor: true }, "Navigation: j/k \u2022 Enter: View tasks \u2022 Tab: Switch views \u2022 Quit: q or Ctrl+C"))));
+            React.createElement(Text, { dimColor: true }, "Navigation: j/k \u2022 Enter: View tasks \u2022 Tab: Cycle views \u2022 Quit: q or Ctrl+C"))));
 }
 //# sourceMappingURL=TasksListView.js.map

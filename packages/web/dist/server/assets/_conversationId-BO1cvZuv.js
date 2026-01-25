@@ -2,7 +2,7 @@ import { jsx, jsxs } from "react/jsx-runtime";
 import { Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { a as getTasksForConversation } from "./tasks-lsBLC6vG.js";
-import { R as Route } from "./router-DS6JJFaw.js";
+import { R as Route } from "./router-Bo4wYSMH.js";
 import "./createSsrRpc-CVg2UDl0.js";
 import "../server.js";
 import "@tanstack/history";

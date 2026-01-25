@@ -69,7 +69,7 @@ export function PlansListView({ selectedPlanFilename, onSelectPlan, onViewPlan, 
             return null;
         return parsePlanMarkdown(previewContent);
     }, [previewContent]);
-    // Keyboard navigation
+    // Keyboard navigation (Tab is handled globally in App.tsx)
     useInput((input, key) => {
         if (key.upArrow || input === 'k') {
             // Navigate to previous plan
@@ -91,10 +91,6 @@ export function PlansListView({ selectedPlanFilename, onSelectPlan, onViewPlan, 
             if (selectedPlan) {
                 onViewPlan(selectedPlan, previewContent);
             }
-        }
-        else if (key.tab || input === 't') {
-            // Tab to switch back to sessions
-            onSwitchToSessions();
         }
     });
     const selectedPlan = plans.find((p) => p.filename === selectedPlanFilename) || null;
@@ -146,6 +142,6 @@ export function PlansListView({ selectedPlanFilename, onSelectPlan, onViewPlan, 
                         " more"))))) : (React.createElement(Box, null,
                 React.createElement(Text, { dimColor: true }, "Select a plan to preview"))))),
         React.createElement(Box, { marginTop: 1 },
-            React.createElement(Text, { dimColor: true }, "Navigation: \u2191/\u2193 or j/k \u2022 Enter: View plan \u2022 Tab: Switch to Sessions \u2022 Quit: q or Ctrl+C"))));
+            React.createElement(Text, { dimColor: true }, "Navigation: j/k \u2022 Enter: View plan \u2022 Tab: Cycle views \u2022 Quit: q or Ctrl+C"))));
 }
 //# sourceMappingURL=PlansListView.js.map

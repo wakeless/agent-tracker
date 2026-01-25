@@ -4,15 +4,22 @@
   "private": true,
   "description": "Web dashboard for Agent Tracker - browser-based session monitoring",
   "type": "module",
+  "bin": {
+    "agent-tracker-web": "./dist/cli.js"
+  },
   "scripts": {
     "dev": "vite",
     "dev:proxy": "BASE_PATH=/agent-tracker vite",
+    "dev:auth": "tsx src/cli.ts",
     "build": "vite build",
     "build:proxy": "BASE_PATH=/agent-tracker vite build",
-    "start": "node .output/server/index.mjs",
+    "start": "tsx src/cli.ts",
+    "start:no-auth": "tsx src/cli.ts --no-auth",
+    "start:legacy": "node .output/server/index.mjs",
     "start:proxy": "BASE_PATH=/agent-tracker node .output/server/index.mjs",
     "test": "playwright test",
     "test:integration": "playwright test tests/integration.spec.ts",
+    "test:auth": "playwright test tests/auth.spec.ts",
     "test:debug": "playwright test --grep debug",
     "test:headed": "playwright test --headed"
   },
@@ -33,6 +40,7 @@
     "@types/react": "^19.0.7",
     "@types/react-dom": "^19.0.3",
     "@vitejs/plugin-react": "^4.5.0",
+    "tsx": "^4.20.6",
     "typescript": "^5.9.3",
     "vite": "^7.3.1",
     "vite-tsconfig-paths": "^5.1.4"

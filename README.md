@@ -10,6 +10,7 @@ A CLI TUI tool for tracking active Claude Code sessions. Never lose track of you
 - **Activity Monitoring**: Real-time tracking of tool usage, prompts, and Claude responses
 - **Smart Session States**: Distinguishes between active, inactive, and ended sessions based on actual activity
 - **Visual Dashboard**: Beautiful 2-column TUI showing all your Claude sessions
+- **Web Dashboard**: Browser-based monitoring with HTTP Basic Auth and optional TLS support
 - **Rich Terminal Context**:
   - iTerm2 integration showing tab names, window names, and profiles
   - Docker container detection
@@ -140,6 +141,80 @@ cd demo-repo && claude
 - **↑/↓** or **j/k**: Navigate between sessions
 - **q** or **Ctrl+C**: Quit
 
+## Web Dashboard
+
+The web dashboard provides browser-based session monitoring with built-in security features.
+
+### Starting the Web Dashboard
+
+```bash
+# Start with auto-generated password (displayed on startup)
+npm run start:web
+
+# Or from the web package directory
+cd packages/web
+npm run start
+```
+
+On startup, credentials are displayed:
+
+```
+============================================
+  Agent Tracker Web Dashboard
+============================================
+
+  Authentication: ENABLED
+  Username: admin
+  Password: ZhQpgcM7BFr-BJX5
+
+  URL: http://localhost:3000/
+
+  Test with:
+  curl -H "Authorization: Basic YWRtaW46..." http://localhost:3000/
+
+============================================
+```
+
+### Web Dashboard Options
+
+```bash
+# Custom credentials
+npm run start:web -- -c admin:mysecretpassword
+
+# Disable authentication (not recommended for production)
+npm run start:web -- --no-auth
+
+# Enable TLS/HTTPS
+npm run start:web -- --tls --tls-cert ./cert.pem --tls-key ./key.pem
+
+# Custom port and host
+npm run start:web -- -p 8080 -h 0.0.0.0
+
+# Add random URL path for security through obscurity
+npm run start:web -- --random-url
+```
+
+### Environment Variables
+
+The web dashboard also supports configuration via environment variables:
+
+| Variable | Description |
+|----------|-------------|
+| `AUTH_CREDENTIAL` | Credentials in `user:pass` format |
+| `TLS_CERT` | Path to TLS certificate file |
+| `TLS_KEY` | Path to TLS private key file |
+| `PORT` | Server port (default: 3000) |
+| `HOST` | Server hostname (default: localhost) |
+
+### Development Mode
+
+For development without authentication:
+
+```bash
+cd packages/web
+npm run dev        # Standard dev server (no auth)
+npm run dev:auth   # Dev server with auth via CLI
+```
 
 ## Session States
 
@@ -383,6 +458,7 @@ Events are stored in `~/.agent-tracker/sessions.jsonl` in JSONL format:
 - ✅ **Docker detection** - Container ID and name extraction
 - ✅ **Smart session states** - Activity-based active/inactive detection
 - ✅ **npm installable** - Global install with `npm install -g agent-tracker`
+- ✅ **Web dashboard with authentication** - HTTP Basic Auth and TLS support
 
 ### Future Enhancements
 

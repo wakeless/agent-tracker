@@ -212,7 +212,7 @@ export function App() {
         }
         case 'tasks-list': {
             const tasksListView = currentView;
-            return (React.createElement(TasksListView, { selectedConversationId: tasksListView.selectedConversationId, onSelectTaskSet: navigation.selectTaskSet, onViewTaskSet: navigation.pushTaskSetDetail, onSwitchToSessions: navigation.switchToSessions }));
+            return (React.createElement(TasksListView, { selectedConversationId: tasksListView.selectedConversationId, onSelectTaskSet: navigation.selectTaskSet, onViewTaskSet: navigation.pushTaskSetDetail }));
         }
         case 'task-set-detail': {
             const taskSetDetailView = currentView;

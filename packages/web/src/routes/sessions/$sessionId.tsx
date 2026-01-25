@@ -2,7 +2,17 @@ import { createFileRoute, Link } from '@tanstack/react-router';
 import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { getSession, getTranscript } from '../../server/sessions';
+import { getTasksForConversation, SerializedTask } from '../../server/tasks';
 import { Session, ParsedTranscriptEntry } from '@agent-tracker/core';
+
+// Extract conversation UUID from transcript path
+function extractConversationId(transcriptPath: string): string | null {
+  const basename = transcriptPath.split('/').pop() || '';
+  if (basename.endsWith('.jsonl')) {
+    return basename.slice(0, -6);
+  }
+  return null;
+}
 
 export const Route = createFileRoute('/sessions/$sessionId')({
   component: SessionDetailPage,
@@ -20,6 +30,21 @@ function SessionDetailPage() {
   });
 
   const session = sessionData?.session;
+
+  // Extract conversation ID from transcript path for tasks lookup
+  const conversationId = session?.transcriptPath
+    ? extractConversationId(session.transcriptPath)
+    : null;
+
+  // Fetch tasks for this conversation
+  const { data: tasksData } = useQuery({
+    queryKey: ['session-tasks', conversationId],
+    queryFn: () => getTasksForConversation({ data: conversationId! }),
+    enabled: !!conversationId,
+    refetchInterval: 10000, // Refresh every 10 seconds
+  });
+
+  const tasks = tasksData?.taskSet?.tasks || [];
 
   const {
     data: transcriptData,
@@ -108,6 +133,8 @@ function SessionDetailPage() {
           </span>
         )}
       </div>
+
+      {tasks.length > 0 && <TasksSection tasks={tasks} />}
 
       <HighlightsSection entries={allEntries} />
 
@@ -347,6 +374,152 @@ function HighlightsSection({ entries }: { entries: ParsedTranscriptEntry[] }) {
             </span>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function TasksSection({ tasks }: { tasks: SerializedTask[] }) {
+  const [isExpanded, setIsExpanded] = useState(true);
+
+  const counts = useMemo(() => ({
+    pending: tasks.filter(t => t.status === 'pending').length,
+    inProgress: tasks.filter(t => t.status === 'in_progress').length,
+    completed: tasks.filter(t => t.status === 'completed').length,
+  }), [tasks]);
+
+  const getStatusConfig = (status: string) => {
+    switch (status) {
+      case 'in_progress':
+        return { color: '#d29922', bg: '#4d3800', label: 'Active' };
+      case 'completed':
+        return { color: '#3fb950', bg: '#1b4721', label: 'Done' };
+      default:
+        return { color: '#8b949e', bg: '#21262d', label: 'Pending' };
+    }
+  };
+
+  // Collapsed view
+  if (!isExpanded) {
+    return (
+      <button
+        onClick={() => setIsExpanded(true)}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          width: '100%',
+          padding: '8px 12px',
+          marginBottom: '12px',
+          background: '#161b22',
+          border: '1px solid #4d3800',
+          borderRadius: '6px',
+          cursor: 'pointer',
+          color: '#d29922',
+          fontSize: '12px',
+        }}
+      >
+        <span>▶</span>
+        <span style={{ fontWeight: 500 }}>Tasks ({tasks.length}):</span>
+        {counts.inProgress > 0 && <span style={{ color: '#d29922' }}>{counts.inProgress} active</span>}
+        {counts.pending > 0 && <span style={{ color: '#8b949e' }}>{counts.pending} pending</span>}
+        {counts.completed > 0 && <span style={{ color: '#3fb950' }}>{counts.completed} done</span>}
+      </button>
+    );
+  }
+
+  return (
+    <div style={{
+      background: '#161b22',
+      borderRadius: '8px',
+      border: '1px solid #4d3800',
+      marginBottom: '12px',
+      overflow: 'hidden',
+    }}>
+      <div style={{
+        padding: '8px 12px',
+        borderBottom: '1px solid #30363d',
+        display: 'flex',
+        gap: '12px',
+        alignItems: 'center',
+      }}>
+        <button
+          onClick={() => setIsExpanded(false)}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: '#8b949e',
+            cursor: 'pointer',
+            padding: '2px',
+            fontSize: '10px',
+          }}
+        >
+          ▼
+        </button>
+        <span style={{ fontSize: '13px', fontWeight: 500, color: '#d29922' }}>
+          Tasks ({tasks.length})
+        </span>
+        <span style={{ fontSize: '12px', color: '#8b949e' }}>
+          {counts.inProgress > 0 && <span style={{ color: '#d29922', marginRight: '8px' }}>{counts.inProgress} active</span>}
+          {counts.pending > 0 && <span style={{ marginRight: '8px' }}>{counts.pending} pending</span>}
+          {counts.completed > 0 && <span style={{ color: '#3fb950' }}>{counts.completed} done</span>}
+        </span>
+      </div>
+
+      <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+        {tasks.map((task) => {
+          const status = getStatusConfig(task.status);
+          return (
+            <div
+              key={task.id}
+              style={{
+                padding: '10px 16px',
+                borderBottom: '1px solid #21262d',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                <span style={{ color: '#6e7681', fontSize: '12px' }}>#{task.id}</span>
+                <span style={{
+                  padding: '2px 8px',
+                  borderRadius: '12px',
+                  background: status.bg,
+                  color: status.color,
+                  fontSize: '11px',
+                  fontWeight: 500,
+                }}>
+                  {status.label}
+                </span>
+                {task.blockedBy.length > 0 && (
+                  <span style={{ color: '#f85149', fontSize: '11px' }}>
+                    blocked by {task.blockedBy.join(', ')}
+                  </span>
+                )}
+              </div>
+              <div style={{ fontSize: '13px', color: '#c9d1d9', fontWeight: 500 }}>
+                {task.subject}
+              </div>
+              {task.status === 'in_progress' && task.activeForm && (
+                <div style={{ fontSize: '12px', color: '#d29922', marginTop: '4px' }}>
+                  {task.activeForm}
+                </div>
+              )}
+              {task.description && (
+                <div style={{
+                  fontSize: '12px',
+                  color: '#8b949e',
+                  marginTop: '4px',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
+                }}>
+                  {task.description}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
